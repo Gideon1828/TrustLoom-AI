@@ -1,0 +1,48 @@
+"""
+API Requirements - Dependencies for FastAPI Backend
+Freelancer Trust Evaluation System
+
+This file lists all required Python packages for the API.
+Install using: pip install -r requirements.txt
+"""
+
+# FastAPI Framework
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+
+# Data Validation
+pydantic==2.5.3
+pydantic-settings==2.1.0
+
+# HTTP Client (for external API calls)
+httpx==0.26.0
+requests==2.31.0
+
+# File Processing
+python-multipart==0.0.6
+aiofiles==23.2.1
+
+# Resume Parsing (will be used in Step 6.2)
+PyPDF2==3.0.1
+pdfplumber==0.10.3
+python-docx==1.1.0
+
+# Logging & Monitoring
+python-json-logger==2.0.7
+
+# Security & CORS
+python-jose[cryptography]==3.3.0
+
+# Environment Variables
+python-dotenv==1.0.0
+
+# Type Hints
+typing-extensions==4.9.0
+
+# Testing (for API tests)
+pytest==7.4.4
+pytest-asyncio==0.23.3
+httpx==0.26.0
+
+# Note: ML dependencies (torch, transformers) are already installed
+# from previous phases and don't need to be duplicated here
