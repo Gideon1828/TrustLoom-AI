@@ -128,7 +128,7 @@ const LandingPage = () => {
       <nav className="landing-nav-wrapper">
         <div className="landing-navbar">
           <div className="nav-left">
-            <img src="/logo.jpeg" alt="TrustLoom" className="nav-logo-img" />
+            <img src="/logo.png" alt="TrustLoom" className="nav-logo-img" />
             <span className="logo-text">TrustLoom</span>
           </div>
 
@@ -475,7 +475,7 @@ const LandingPage = () => {
         <div className="footer-inner">
           <div className="footer-left">
             <div className="footer-logo-row">
-              <img src="/logo.jpeg" alt="TrustLoom" className="footer-logo-img" />
+              <img src="/logo.png" alt="TrustLoom" className="footer-logo-img" />
               <span className="footer-logo-text">TrustLoom</span>
             </div>
             <p className="footer-tagline">AI-powered freelancer trust evaluation.</p>

@@ -9,7 +9,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
-import logo from '../../assets/logo.jpeg';
+import logo from '../../assets/logo.png';
 import './Legal.css';
 
 const TermsOfService = () => {

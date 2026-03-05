@@ -11,7 +11,7 @@ import { Login, Register, ForgotPassword, OAuthCallback } from "./pages/auth";
 import { TermsOfService, PrivacyPolicy } from "./pages/legal";
 import ProfileSettings from "./pages/ProfileSettings";
 import LandingPage from "./pages/Landing";
-import appLogo from "./assets/logo.jpeg";
+import appLogo from "./assets/logo.png";
 import InputForm from "./components/InputForm.jsx";
 import Results from "./components/Results.jsx";
 import ChatBot from "./components/ChatBot";

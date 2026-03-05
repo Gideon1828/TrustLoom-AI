@@ -22,7 +22,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { checkRateLimit, recordAttempt, clearRateLimit } from '../../utils/rateLimiter';
 import { validateAuthForm, sanitizeInput } from '../../utils/inputSanitizer';
 import { Sun, Moon, ShieldCheck, Zap, Award, ShieldAlert, TrendingUp, User, Mail, Building2, KeyRound, Lock, Eye, EyeOff, ArrowRight, AlertCircle, CheckCircle2 } from 'lucide-react';
-import logo from '../../assets/logo.jpeg';
+import logo from '../../assets/logo.png';
 import './Auth.css';
 
 // Password strength calculation

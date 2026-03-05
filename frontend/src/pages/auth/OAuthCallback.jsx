@@ -18,7 +18,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { ShieldCheck } from 'lucide-react';
-import logo from '../../assets/logo.jpeg';
+import logo from '../../assets/logo.png';
 import './Auth.css';
 
 const OAuthCallback = () => {

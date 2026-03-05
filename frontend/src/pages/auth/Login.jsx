@@ -21,7 +21,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { checkRateLimit, recordAttempt, clearRateLimit } from '../../utils/rateLimiter';
 import { validateAuthForm, sanitizeInput } from '../../utils/inputSanitizer';
 import { Sun, Moon, ShieldCheck, Sparkles, BarChart3, MessageSquareText, Lock, Mail, KeyRound, Eye, EyeOff, ArrowRight, CheckCircle2, AlertCircle } from 'lucide-react';
-import logo from '../../assets/logo.jpeg';
+import logo from '../../assets/logo.png';
 import './Auth.css';
 
 const Login = () => {
