@@ -1,0 +1,353 @@
+/**
+ * theme.css - Comprehensive Theme System for TrustLoom-AI
+ * 
+ * This file contains CSS custom properties (variables) for both light and dark themes.
+ * All components should use these variables for colors and gradients.
+ * 
+ * Usage: var(--theme-variable-name)
+ */
+
+/* ============================================================================
+   THEME TRANSITION
+   ============================================================================ */
+
+.theme-transitioning,
+.theme-transitioning *,
+.theme-transitioning *::before,
+.theme-transitioning *::after {
+  transition:
+    background-color 0.3s ease,
+    background 0.3s ease,
+    color 0.3s ease,
+    border-color 0.3s ease,
+    box-shadow 0.3s ease !important;
+}
+
+/* ============================================================================
+   LIGHT THEME (Default)
+   ============================================================================ */
+
+:root,
+:root.light-theme,
+[data-theme="light"] {
+  /* Primary Colors */
+  --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --primary-color: #667eea;
+  --primary-dark: #5a67d8;
+  --primary-light: #818cf8;
+  --secondary-color: #764ba2;
+
+  /* Accent Colors */
+  --accent-purple: #8b5cf6;
+  --accent-purple-light: #a78bfa;
+  --accent-purple-dark: #7c3aed;
+
+  /* Background Colors */
+  --bg-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --bg-secondary: #f9fafb;
+  --bg-tertiary: #f3f4f6;
+  --bg-card: #ffffff;
+  --bg-card-hover: #fafafa;
+  --bg-overlay: rgba(0, 0, 0, 0.5);
+  --bg-input: #ffffff;
+  --bg-input-focus: #ffffff;
+  --bg-dropdown: #ffffff;
+  --bg-tooltip: #1f2937;
+  --bg-code: #f3f4f6;
+
+  /* Text Colors */
+  --text-primary: #1f2937;
+  --text-secondary: #4b5563;
+  --text-tertiary: #6b7280;
+  --text-muted: #9ca3af;
+  --text-inverse: #ffffff;
+  --text-link: #667eea;
+  --text-link-hover: #5a67d8;
+
+  /* Border Colors */
+  --border-light: #e5e7eb;
+  --border-medium: #d1d5db;
+  --border-dark: #9ca3af;
+  --border-focus: #8b5cf6;
+  --border-input: #d1d5db;
+
+  /* Status Colors */
+  --success-bg: #d1fae5;
+  --success-text: #065f46;
+  --success-border: #10b981;
+  --success-icon: #10b981;
+
+  --warning-bg: #fef3c7;
+  --warning-text: #92400e;
+  --warning-border: #f59e0b;
+  --warning-icon: #f59e0b;
+
+  --error-bg: #fee2e2;
+  --error-text: #991b1b;
+  --error-border: #ef4444;
+  --error-icon: #ef4444;
+
+  --info-bg: #dbeafe;
+  --info-text: #1e40af;
+  --info-border: #3b82f6;
+  --info-icon: #3b82f6;
+
+  /* Score Colors */
+  --score-excellent: #10b981;
+  --score-good: #34d399;
+  --score-average: #fbbf24;
+  --score-poor: #f87171;
+  --score-critical: #ef4444;
+
+  /* Shadow */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.1);
+  --shadow-2xl: 0 25px 50px rgba(0, 0, 0, 0.15);
+  --shadow-card: 0 20px 60px rgba(0, 0, 0, 0.15);
+  --shadow-dropdown: 0 10px 40px rgba(0, 0, 0, 0.15);
+  --shadow-header: 0 4px 15px rgba(0, 0, 0, 0.2);
+
+  /* Component Specific */
+  --header-bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --header-text: #ffffff;
+  --footer-bg: rgba(255, 255, 255, 0.95);
+  --footer-text: #6b7280;
+
+  --sidebar-bg: linear-gradient(180deg, #1e1e2e 0%, #171723 100%);
+  --sidebar-text: #e0e0e0;
+  --sidebar-border: rgba(255, 255, 255, 0.1);
+  --sidebar-hover: rgba(255, 255, 255, 0.1);
+
+  --input-bg: #ffffff;
+  --input-border: #d1d5db;
+  --input-focus-border: #8b5cf6;
+  --input-placeholder: #9ca3af;
+
+  --button-primary-bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --button-primary-text: #ffffff;
+  --button-secondary-bg: #f3f4f6;
+  --button-secondary-text: #374151;
+  --button-disabled-bg: #e5e7eb;
+  --button-disabled-text: #9ca3af;
+
+  /* Scrollbar */
+  --scrollbar-track: #f1f1f1;
+  --scrollbar-thumb: #888;
+  --scrollbar-thumb-hover: #555;
+
+  /* Selection */
+  --selection-bg: #8b5cf6;
+  --selection-text: #ffffff;
+
+  /* Dropzone */
+  --dropzone-bg: #f9fafb;
+  --dropzone-border: #d1d5db;
+  --dropzone-hover-bg: #f3f4f6;
+  --dropzone-hover-border: #8b5cf6;
+  --dropzone-active-bg: #ede9fe;
+  --dropzone-success-bg: #d1fae5;
+  --dropzone-success-border: #10b981;
+
+  /* Progress/Loading */
+  --loading-bg: rgba(255, 255, 255, 0.9);
+  --loading-spinner: #667eea;
+
+  /* Tags */
+  --tag-bg: #f3f4f6;
+  --tag-text: #374151;
+  --tag-border: #e5e7eb;
+
+  /* Badges */
+  --badge-primary-bg: #ede9fe;
+  --badge-primary-text: #5b21b6;
+  --badge-secondary-bg: #e5e7eb;
+  --badge-secondary-text: #6b7280;
+
+  /* Tables */
+  --table-header-bg: #f9fafb;
+  --table-row-hover: #f3f4f6;
+  --table-border: #e5e7eb;
+
+  /* Cards */
+  --card-bg: #ffffff;
+  --card-border: #e5e7eb;
+  --card-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+
+  /* Modals */
+  --modal-bg: #ffffff;
+  --modal-overlay: rgba(0, 0, 0, 0.5);
+  --modal-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+
+  /* XAI Components */
+  --xai-highlight-bg: #fefce8;
+  --xai-highlight-border: #fbbf24;
+  --xai-decision-path-bg: #f0fdf4;
+  --xai-feature-positive: #10b981;
+  --xai-feature-negative: #ef4444;
+}
+
+/* ============================================================================
+   DARK THEME
+   ============================================================================ */
+
+:root.dark-theme,
+[data-theme="dark"] {
+  /* Primary Colors */
+  --primary-gradient: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  --primary-color: #818cf8;
+  --primary-dark: #6366f1;
+  --primary-light: #a5b4fc;
+  --secondary-color: #a78bfa;
+
+  /* Accent Colors */
+  --accent-purple: #a78bfa;
+  --accent-purple-light: #c4b5fd;
+  --accent-purple-dark: #8b5cf6;
+
+  /* Background Colors */
+  --bg-primary: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+  --bg-secondary: #1f1f2e;
+  --bg-tertiary: #252536;
+  --bg-card: #1a1a2e;
+  --bg-card-hover: #222238;
+  --bg-overlay: rgba(0, 0, 0, 0.7);
+  --bg-input: #252536;
+  --bg-input-focus: #2d2d42;
+  --bg-dropdown: #1a1a2e;
+  --bg-tooltip: #374151;
+  --bg-code: #252536;
+
+  /* Text Colors */
+  --text-primary: #f3f4f6;
+  --text-secondary: #d1d5db;
+  --text-tertiary: #9ca3af;
+  --text-muted: #6b7280;
+  --text-inverse: #1f2937;
+  --text-link: #818cf8;
+  --text-link-hover: #a5b4fc;
+
+  /* Border Colors */
+  --border-light: #374151;
+  --border-medium: #4b5563;
+  --border-dark: #6b7280;
+  --border-focus: #a78bfa;
+  --border-input: #4b5563;
+
+  /* Status Colors */
+  --success-bg: #064e3b;
+  --success-text: #6ee7b7;
+  --success-border: #10b981;
+  --success-icon: #34d399;
+
+  --warning-bg: #78350f;
+  --warning-text: #fcd34d;
+  --warning-border: #f59e0b;
+  --warning-icon: #fbbf24;
+
+  --error-bg: #7f1d1d;
+  --error-text: #fca5a5;
+  --error-border: #ef4444;
+  --error-icon: #f87171;
+
+  --info-bg: #1e3a5f;
+  --info-text: #93c5fd;
+  --info-border: #3b82f6;
+  --info-icon: #60a5fa;
+
+  /* Score Colors */
+  --score-excellent: #34d399;
+  --score-good: #6ee7b7;
+  --score-average: #fcd34d;
+  --score-poor: #fca5a5;
+  --score-critical: #f87171;
+
+  /* Shadow */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.5);
+  --shadow-2xl: 0 25px 50px rgba(0, 0, 0, 0.6);
+  --shadow-card: 0 20px 60px rgba(0, 0, 0, 0.4);
+  --shadow-dropdown: 0 10px 40px rgba(0, 0, 0, 0.4);
+  --shadow-header: 0 4px 15px rgba(0, 0, 0, 0.4);
+
+  /* Component Specific */
+  --header-bg: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+  --header-text: #f3f4f6;
+  --footer-bg: rgba(26, 26, 46, 0.95);
+  --footer-text: #9ca3af;
+
+  --sidebar-bg: linear-gradient(180deg, #0f0f1a 0%, #1a1a2e 100%);
+  --sidebar-text: #e0e0e0;
+  --sidebar-border: rgba(255, 255, 255, 0.1);
+  --sidebar-hover: rgba(255, 255, 255, 0.08);
+
+  --input-bg: #252536;
+  --input-border: #4b5563;
+  --input-focus-border: #a78bfa;
+  --input-placeholder: #6b7280;
+
+  --button-primary-bg: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  --button-primary-text: #ffffff;
+  --button-secondary-bg: #374151;
+  --button-secondary-text: #e5e7eb;
+  --button-disabled-bg: #374151;
+  --button-disabled-text: #6b7280;
+
+  /* Scrollbar */
+  --scrollbar-track: #1f1f2e;
+  --scrollbar-thumb: #4b5563;
+  --scrollbar-thumb-hover: #6b7280;
+
+  /* Selection */
+  --selection-bg: #7c3aed;
+  --selection-text: #ffffff;
+
+  /* Dropzone */
+  --dropzone-bg: #1f1f2e;
+  --dropzone-border: #4b5563;
+  --dropzone-hover-bg: #252536;
+  --dropzone-hover-border: #a78bfa;
+  --dropzone-active-bg: #312e81;
+  --dropzone-success-bg: #064e3b;
+  --dropzone-success-border: #10b981;
+
+  /* Progress/Loading */
+  --loading-bg: rgba(26, 26, 46, 0.95);
+  --loading-spinner: #818cf8;
+
+  /* Tags */
+  --tag-bg: #374151;
+  --tag-text: #e5e7eb;
+  --tag-border: #4b5563;
+
+  /* Badges */
+  --badge-primary-bg: #3730a3;
+  --badge-primary-text: #c4b5fd;
+  --badge-secondary-bg: #374151;
+  --badge-secondary-text: #9ca3af;
+
+  /* Tables */
+  --table-header-bg: #1f1f2e;
+  --table-row-hover: #252536;
+  --table-border: #374151;
+
+  /* Cards */
+  --card-bg: #1a1a2e;
+  --card-border: #374151;
+  --card-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+
+  /* Modals */
+  --modal-bg: #1a1a2e;
+  --modal-overlay: rgba(0, 0, 0, 0.7);
+  --modal-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+
+  /* XAI Components */
+  --xai-highlight-bg: #422006;
+  --xai-highlight-border: #b45309;
+  --xai-decision-path-bg: #064e3b;
+  --xai-feature-positive: #34d399;
+  --xai-feature-negative: #f87171;
+}

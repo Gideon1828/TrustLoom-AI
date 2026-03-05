@@ -1,0 +1,62 @@
+SECTION: TRUST SCORE AND RESULTS
+TOPIC: Understanding the Trust Score, Score Breakdown, Risk Levels
+
+--- TRUST SCORE ---
+• The Trust Score is a number from 0 to 100 that represents the overall trustworthiness of a freelancer's profile.
+• It is displayed as a large circular gauge on the Results page with a color-coded ring:
+  - Green (80–100): Excellent trustworthiness
+  - Yellow (55–79): Good or Average trustworthiness
+  - Red (0–54): Needs Attention — significant concerns found
+
+--- RISK LEVELS ---
+Three risk levels are determined by the trust score:
+• LOW RISK (score 80–100) → Recommendation: TRUSTWORTHY
+  "Shows strong indicators of trustworthiness. High credibility and low risk factors."
+• MEDIUM RISK (score 55–79) → Recommendation: MODERATE
+  "Shows moderate trustworthiness. Consider reviewing specific flags."
+• HIGH RISK (score 0–54) → Recommendation: RISKY
+  "Shows significant risk factors. Careful consideration and thorough verification recommended."
+
+--- SCORE COMPONENTS ---
+The trust score is made up of three main components:
+
+1. LANGUAGE QUALITY (0–25 points)
+   • Analyzes the resume text for professional language, action verbs, grammar, and writing quality.
+   • Higher scores mean the resume is well-written and uses professional terminology.
+   • Lower scores may indicate poor writing, generic text, or AI-generated filler.
+
+2. PROJECT REALISM (0–45 points)
+   • Analyzes project descriptions in the resume for realistic patterns.
+   • Checks project timelines, overlaps, duration consistency, and technology usage.
+   • Higher scores mean the projects appear genuine and consistent.
+   • Lower scores may indicate fabricated projects, impossible timelines, or suspicious patterns.
+
+3. PROFILE VALIDATION (0–30 points)
+   This is further broken down:
+   • GitHub Validation (0–10 points): Checks GitHub profile existence, activity, repositories, contributions.
+   • LinkedIn Validation (0–10 points): Checks LinkedIn profile existence and completeness.
+   • Portfolio (0–5 points): If provided, checks if the portfolio website is accessible and relevant.
+   • Experience Match (0–5 points): Compares the claimed experience level against what is found in the resume and profiles. Full match = 5, partial match = 3, mismatch = 0.
+
+--- SCORE CALCULATION SUMMARY ---
+• Resume Quality (Language + Projects) = 0 to 70 points
+• Profile Validation (GitHub + LinkedIn + Portfolio + Experience) = 0 to 30 points
+• TOTAL TRUST SCORE = 0 to 100 points
+
+--- WHAT IS DISPLAYED ON THE RESULTS PAGE ---
+1. Hero Section: Large trust score circle, risk level badge, recommendation card.
+2. Quick Stats Strip: Three quick numbers — Language Quality (/25), Project Realism (/45), Profile Validation (/30).
+3. Score Breakdown: Detailed progress bars for each component, showing score, maximum, and percentage.
+4. Summary Table: Tabular view with Resume Quality (/70), Profile Validation (/30), and Final Trust Score (/100).
+5. Visual Analytics: Three charts (doughnut chart, bar chart, component comparison chart).
+
+--- HOW TO IMPROVE THE SCORE ---
+• Check the "Improvement Suggestions" section for specific, actionable tips.
+• Each suggestion shows how many points you could gain.
+• Common improvements:
+  - Improve resume writing quality (more action verbs, quantified achievements)
+  - Add more detailed project descriptions with realistic timelines
+  - Make your GitHub profile active (more repositories, recent commits)
+  - Complete your LinkedIn profile
+  - Add a portfolio website
+  - Ensure experience level matches resume content

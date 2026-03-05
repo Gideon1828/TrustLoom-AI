@@ -22,18 +22,22 @@ Date: 2026-01-18
 
 from __future__ import annotations
 
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form, status
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form, status, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field, HttpUrl, field_validator
-from typing import Optional, List, Dict, Any
-from datetime import datetime
+from fastapi.responses import JSONResponse, StreamingResponse
+from pydantic import BaseModel, Field, HttpUrl, field_validator, model_validator
+from typing import Optional, List, Dict, Any, Union
+from datetime import datetime, timedelta
 import logging
 import sys
 from pathlib import Path
 import tempfile
 import os
 import shutil
+import uuid
+import asyncio
+import time
+import io
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -52,6 +56,15 @@ from models.lstm_scorer import LSTMScorer
 from models.resume_scorer import ResumeScorer
 from models.heuristic_scorer import HeuristicScorer
 from models.final_scorer import FinalScorer
+from models.explainability_engine import ExplainabilityEngine, get_explainability_engine
+from models.suggestion_engine import SuggestionEngine, get_suggestion_engine
+from models.interview_generator_gemini import GeminiInterviewGenerator, get_interview_generator
+
+# Import auth router
+from api.auth import router as auth_router
+from api.history import router as history_router
+from api.profile import router as profile_router
+from api.chat import router as chat_router
 
 # Setup logging
 logging.basicConfig(
@@ -275,6 +288,8 @@ lstm_scorer = None
 resume_scorer = None
 heuristic_scorer = None
 final_scorer = None
+explainability_engine = None
+suggestion_engine = None
 
 def get_resume_parser() -> ResumeParser:
     """
@@ -447,6 +462,44 @@ def get_final_scorer() -> FinalScorer:
             raise ModelLoadError("FinalScorer", str(e))
     return final_scorer
 
+def get_xai_engine() -> ExplainabilityEngine:
+    """
+    Get or initialize XAI Explainability Engine (singleton pattern).
+    XAI Add-on Module 21: Generates human-readable explanations for scores.
+    """
+    global explainability_engine
+    if explainability_engine is None:
+        try:
+            logger.info("Initializing XAI Explainability Engine...")
+            explainability_engine = get_explainability_engine()
+            logger.info("✓ XAI Explainability Engine initialized")
+        except Exception as e:
+            error_msg = f"Failed to initialize XAI Engine: {str(e)}"
+            logger.error(f"❌ {error_msg}")
+            # XAI is optional - don't fail the whole system
+            logger.warning("⚠️ XAI Engine unavailable - explanations will be skipped")
+            return None
+    return explainability_engine
+
+def get_suggestion_engine_api() -> SuggestionEngine:
+    """
+    Get or initialize Suggestion Engine (singleton pattern).
+    Suggestion Engine Add-on Module 22: Generates improvement suggestions from flags.
+    """
+    global suggestion_engine
+    if suggestion_engine is None:
+        try:
+            logger.info("Initializing Suggestion Engine...")
+            suggestion_engine = get_suggestion_engine()
+            logger.info(f"✓ Suggestion Engine initialized (mode: {suggestion_engine.mode})")
+        except Exception as e:
+            error_msg = f"Failed to initialize Suggestion Engine: {str(e)}"
+            logger.error(f"❌ {error_msg}")
+            # Suggestion Engine is optional - don't fail the whole system
+            logger.warning("⚠️ Suggestion Engine unavailable - suggestions will be skipped")
+            return None
+    return suggestion_engine
+
 def check_models_loaded() -> bool:
     """Check if critical models are loaded"""
     return (bert_processor is not None and 
@@ -483,12 +536,14 @@ This API evaluates freelancer trustworthiness using a hybrid AI-powered approach
 
 ### File Upload:
 - `POST /upload-resume`: Upload resume file (optional helper endpoint)
+- `POST /evaluate-resume-only`: Resume-only evaluation (no links) [Module 24]
+- `POST /compare-resumes`: Compare 2-3 resumes side-by-side [Module 24]
 """
 
 API_TAGS_METADATA = [
     {
         "name": "Evaluation",
-        "description": "Main evaluation endpoints for freelancer trust assessment"
+        "description": "Main evaluation endpoints for freelancer trust assessment and resume comparison"
     },
     {
         "name": "Health",
@@ -653,6 +708,253 @@ class EvaluationSummary(BaseModel):
     recommendation_description: str = Field(..., description="Recommendation details")
 
 
+# ============================================================================
+# XAI EXPLANATION MODELS (Module 21 Add-on)
+# ============================================================================
+
+class ComponentExplanation(BaseModel):
+    """
+    XAI explanation for a single scoring component (BERT, LSTM, GitHub, etc.)
+    
+    Provides human-readable interpretation of numerical scores with supporting details.
+    """
+    score: float = Field(..., description="Score achieved for this component")
+    max_score: int = Field(..., description="Maximum possible score for this component")
+    percentage: float = Field(..., description="Score as percentage (0-100)")
+    explanation: str = Field(..., description="Human-readable explanation of the score")
+    details: List[str] = Field(
+        default_factory=list,
+        description="List of specific observations and details supporting the explanation"
+    )
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "score": 18.5,
+                "max_score": 25,
+                "percentage": 74.0,
+                "explanation": "Resume language quality is good. Professional writing style with mostly clear and effective communication.",
+                "details": [
+                    "Language confidence: Moderate - Generally professional with some variance",
+                    "Language score: 18.5/25 (74.0%)",
+                    "2 language issues flagged",
+                    "Issue: Found weak action verbs like 'worked on' and 'helped with'"
+                ]
+            }
+        }
+
+
+class KeyFactor(BaseModel):
+    """
+    Individual key factor that influenced the final trust score.
+    
+    Used in the final score explanation to highlight strengths and concerns.
+    """
+    component: str = Field(..., description="Name of the scoring component")
+    score: str = Field(..., description="Score display (e.g., '18.5/25')")
+    percentage: str = Field(default="", description="Percentage display (e.g., '74%')")
+    status: str = Field(..., description="Status classification (strong/acceptable/weak)")
+    impact: str = Field(default="neutral", description="Impact on final score (positive/neutral/negative)")
+    details: Optional[str] = Field(default=None, description="Additional details about this factor")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "component": "Resume Language (BERT)",
+                "score": "18.5/25",
+                "percentage": "74%",
+                "status": "strong",
+                "impact": "positive",
+                "details": None
+            }
+        }
+
+
+class FinalScoreExplanation(BaseModel):
+    """
+    XAI explanation for the final trust score.
+    
+    Provides comprehensive assessment with risk level interpretation,
+    recommendation reasoning, and key factors that influenced the score.
+    """
+    score: float = Field(..., description="Final trust score (0-100)")
+    max_score: int = Field(default=100, description="Maximum possible score")
+    risk_level: str = Field(..., description="Risk level classification (LOW/MEDIUM/HIGH)")
+    recommendation: str = Field(..., description="Recommendation (TRUSTWORTHY/MODERATE/RISKY)")
+    explanation: str = Field(..., description="Comprehensive explanation of the overall assessment")
+    recommendation_description: Optional[str] = Field(
+        default=None,
+        description="Detailed description of what the recommendation means"
+    )
+    key_factors: List[KeyFactor] = Field(
+        default_factory=list,
+        description="List of key factors that influenced the final score"
+    )
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "score": 74.5,
+                "max_score": 100,
+                "risk_level": "MEDIUM",
+                "recommendation": "MODERATE",
+                "explanation": "Overall trust assessment: MODERATELY TRUSTWORTHY. With a score of 74.5/100, this profile shows acceptable credibility with some areas that could be strengthened.",
+                "recommendation_description": "This candidate is recommended with standard due diligence. Consider reviewing flagged areas before final decision.",
+                "key_factors": [
+                    {
+                        "component": "Resume Language (BERT)",
+                        "score": "18.5/25",
+                        "percentage": "74%",
+                        "status": "strong",
+                        "impact": "positive"
+                    }
+                ]
+            }
+        }
+
+
+class AllExplanations(BaseModel):
+    """
+    Container for all XAI explanations (Module 21 Add-on).
+    
+    Provides structured explanations for every scoring component in the evaluation,
+    making the trust score transparent and understandable for non-technical users.
+    """
+    bert: ComponentExplanation = Field(..., description="BERT language quality score explanation")
+    lstm: ComponentExplanation = Field(..., description="LSTM project pattern score explanation")
+    github: ComponentExplanation = Field(..., description="GitHub profile validation explanation")
+    linkedin: ComponentExplanation = Field(..., description="LinkedIn profile validation explanation")
+    portfolio: ComponentExplanation = Field(..., description="Portfolio website validation explanation")
+    experience: ComponentExplanation = Field(..., description="Experience level match explanation")
+    final: FinalScoreExplanation = Field(..., description="Final trust score explanation with key factors")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "bert": {
+                    "score": 18.5,
+                    "max_score": 25,
+                    "percentage": 74.0,
+                    "explanation": "Resume language quality is good.",
+                    "details": ["Language confidence: Moderate"]
+                },
+                "lstm": {
+                    "score": 32.0,
+                    "max_score": 45,
+                    "percentage": 71.1,
+                    "explanation": "Project pattern analysis indicates high trustworthiness.",
+                    "details": ["6 projects detected over 3.5 years"]
+                },
+                "github": {
+                    "score": 8.0,
+                    "max_score": 10,
+                    "percentage": 80.0,
+                    "explanation": "GitHub profile is highly active.",
+                    "details": ["Profile accessible and verified"]
+                },
+                "linkedin": {
+                    "score": 7.0,
+                    "max_score": 10,
+                    "percentage": 70.0,
+                    "explanation": "LinkedIn profile is valid and accessible.",
+                    "details": ["LinkedIn profile accessible and verified"]
+                },
+                "portfolio": {
+                    "score": 4.0,
+                    "max_score": 5,
+                    "percentage": 80.0,
+                    "explanation": "Portfolio website is fully accessible.",
+                    "details": ["Portfolio website accessible and verified"]
+                },
+                "experience": {
+                    "score": 5.0,
+                    "max_score": 5,
+                    "percentage": 100.0,
+                    "explanation": "Experience level verified as consistent.",
+                    "details": ["Selected experience level: Mid"]
+                },
+                "final": {
+                    "score": 74.5,
+                    "max_score": 100,
+                    "risk_level": "MEDIUM",
+                    "recommendation": "MODERATE",
+                    "explanation": "Overall trust assessment: MODERATELY TRUSTWORTHY.",
+                    "key_factors": []
+                }
+            }
+        }
+
+
+class Suggestion(BaseModel):
+    """Individual improvement suggestion (Module 22 Add-on)"""
+    id: str = Field(..., description="Unique suggestion identifier")
+    category: str = Field(..., description="Suggestion category (LANGUAGE_QUALITY, PROJECT_PATTERNS, PROFILE_LINKS, EXPERIENCE_MATCH)")
+    title: str = Field(..., description="Short actionable title")
+    flag_reference: str = Field(..., description="Original flag message that triggered this suggestion")
+    suggestion: str = Field(..., description="Detailed improvement suggestion text")
+    action_steps: List[str] = Field(default=[], description="Specific actionable steps to implement")
+    examples: List[str] = Field(default=[], description="Example improvements")
+    potential_impact: int = Field(..., description="Potential score improvement in points")
+    priority: str = Field(..., description="Priority level (high, medium, low)")
+    llm_enhanced: bool = Field(default=False, description="Whether this suggestion was enhanced by LLM")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "id": "lang_001",
+                "category": "LANGUAGE_QUALITY",
+                "title": "Strengthen Your Action Verbs",
+                "flag_reference": "Resume uses 5 weak action verbs",
+                "suggestion": "Transform your resume by replacing passive phrases with powerful action verbs.",
+                "action_steps": [
+                    "Replace 'worked on' with 'Developed' or 'Architected'",
+                    "Replace 'helped with' with 'Led' or 'Spearheaded'"
+                ],
+                "examples": [
+                    "Before: 'Worked on the backend system'",
+                    "After: 'Architected a microservices backend serving 50K+ daily users'"
+                ],
+                "potential_impact": 3,
+                "priority": "high",
+                "llm_enhanced": False
+            }
+        }
+
+
+class SuggestionsResponse(BaseModel):
+    """Response model for improvement suggestions (Module 22 Add-on)"""
+    has_suggestions: bool = Field(..., description="Whether there are suggestions available")
+    total_potential_gain: int = Field(..., description="Total potential score improvement in points")
+    suggestions: List[Suggestion] = Field(default=[], description="List of improvement suggestions")
+    summary: str = Field(..., description="Human-readable summary of improvement potential")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "has_suggestions": True,
+                "total_potential_gain": 15,
+                "suggestions": [
+                    {
+                        "id": "link_001",
+                        "category": "PROFILE_LINKS",
+                        "title": "Add Your GitHub Profile",
+                        "flag_reference": "GitHub profile not provided or invalid",
+                        "suggestion": "Showcase your coding skills by adding a complete GitHub profile.",
+                        "action_steps": [
+                            "Create or update your GitHub profile at github.com",
+                            "Add at least 5 public repositories showcasing your best work"
+                        ],
+                        "examples": [],
+                        "potential_impact": 10,
+                        "priority": "high",
+                        "llm_enhanced": False
+                    }
+                ],
+                "summary": "Implementing these 3 suggestions could improve your score from 72 to 87 points!"
+            }
+        }
+
+
 class EvaluationResponse(BaseModel):
     """Response model for evaluation results"""
     final_trust_score: float = Field(..., description="Final trust score (0-100)")
@@ -678,6 +980,16 @@ class EvaluationResponse(BaseModel):
     metadata: Optional[Dict[str, Any]] = Field(
         default=None,
         description="Evaluation metadata (timestamp, resume file, etc.)"
+    )
+    
+    explanations: Optional[AllExplanations] = Field(
+        default=None,
+        description="XAI explanations for each scoring component (Module 21 Add-on)"
+    )
+    
+    suggestions: Optional[SuggestionsResponse] = Field(
+        default=None,
+        description="Improvement suggestions based on detected flags (Module 22 Add-on)"
     )
     
     timestamp: str = Field(..., description="Evaluation timestamp")
@@ -719,6 +1031,80 @@ class EvaluationResponse(BaseModel):
                     "risk_description": "High confidence in trustworthiness",
                     "recommendation_description": "Recommended for engagement"
                 },
+                "explanations": {
+                    "bert": {
+                        "score": 20.0,
+                        "max_score": 25,
+                        "percentage": 80.0,
+                        "explanation": "Resume language quality is good. Professional writing style with mostly clear and effective communication.",
+                        "details": ["Language confidence: High", "No significant language issues detected"]
+                    },
+                    "lstm": {
+                        "score": 40.0,
+                        "max_score": 45,
+                        "percentage": 88.9,
+                        "explanation": "Project pattern analysis indicates high trustworthiness. Timeline consistency is excellent.",
+                        "details": ["8 projects detected over 4.5 years", "No suspicious overlap patterns found"]
+                    },
+                    "github": {
+                        "score": 8.0,
+                        "max_score": 10,
+                        "percentage": 80.0,
+                        "explanation": "GitHub profile is highly active and well-maintained.",
+                        "details": ["Profile accessible and verified", "12 public repositories found"]
+                    },
+                    "linkedin": {
+                        "score": 8.0,
+                        "max_score": 10,
+                        "percentage": 80.0,
+                        "explanation": "LinkedIn profile is fully verified and professional.",
+                        "details": ["LinkedIn profile accessible and verified"]
+                    },
+                    "portfolio": {
+                        "score": 4.0,
+                        "max_score": 5,
+                        "percentage": 80.0,
+                        "explanation": "Portfolio website is fully accessible and professional.",
+                        "details": ["Portfolio website accessible and verified"]
+                    },
+                    "experience": {
+                        "score": 5.0,
+                        "max_score": 5,
+                        "percentage": 100.0,
+                        "explanation": "Experience level verified as consistent.",
+                        "details": ["Selected experience level: Mid", "Status: Experience level verified"]
+                    },
+                    "final": {
+                        "score": 85.0,
+                        "max_score": 100,
+                        "risk_level": "LOW",
+                        "recommendation": "TRUSTWORTHY",
+                        "explanation": "Overall trust assessment: HIGHLY TRUSTWORTHY.",
+                        "key_factors": []
+                    }
+                },
+                "suggestions": {
+                    "has_suggestions": True,
+                    "total_potential_gain": 5,
+                    "suggestions": [
+                        {
+                            "id": "lang_001",
+                            "category": "LANGUAGE_QUALITY",
+                            "title": "Strengthen Your Action Verbs",
+                            "flag_reference": "Resume uses 3 weak action verbs",
+                            "suggestion": "Replace generic verbs with powerful action words to better showcase your impact.",
+                            "action_steps": [
+                                "Replace 'worked on' with 'Developed' or 'Architected'",
+                                "Replace 'helped with' with 'Led' or 'Spearheaded'"
+                            ],
+                            "examples": [],
+                            "potential_impact": 2,
+                            "priority": "medium",
+                            "llm_enhanced": False
+                        }
+                    ],
+                    "summary": "Implementing this suggestion could improve your score from 85 to 90 points!"
+                },
                 "timestamp": "2026-01-18T12:00:00Z"
             }
         }
@@ -727,21 +1113,27 @@ class EvaluationResponse(BaseModel):
 class UploadResponse(BaseModel):
     """Response model for file upload"""
     filename: str = Field(..., description="Uploaded filename")
+    file_id: str = Field(..., description="Unique file ID for later retrieval")
     file_size: int = Field(..., description="File size in bytes")
+    file_type: str = Field(..., description="File extension (.pdf or .docx)")
     text_extracted: str = Field(..., description="Extracted text preview (first 500 chars)")
     full_text: str = Field(..., description="Complete extracted text from resume")
     text_length: int = Field(..., description="Total text length")
     upload_timestamp: str = Field(..., description="Upload timestamp")
+    expires_at: str = Field(..., description="File expiration timestamp")
     
     class Config:
         json_schema_extra = {
             "example": {
                 "filename": "resume.pdf",
+                "file_id": "abc123-def456-ghi789",
                 "file_size": 102400,
+                "file_type": ".pdf",
                 "text_extracted": "John Doe\nSoftware Engineer...",
                 "full_text": "John Doe\nSoftware Engineer\nExperience...\nProjects...\n",
                 "text_length": 2500,
-                "upload_timestamp": "2026-01-18T12:00:00Z"
+                "upload_timestamp": "2026-01-18T12:00:00Z",
+                "expires_at": "2026-01-18T13:00:00Z"
             }
         }
 
@@ -760,6 +1152,565 @@ class ErrorResponse(BaseModel):
                 "message": "Invalid input data",
                 "details": {"field": "github_url", "issue": "Invalid format"},
                 "timestamp": "2026-01-18T12:00:00Z"
+            }
+        }
+
+
+# ============================================================================
+# FILE STORAGE FOR RESUME UPLOADS
+# ============================================================================
+
+# File storage for original resume files (with cleanup)
+_file_storage: Dict[str, Dict[str, Any]] = {}
+_file_storage_lock = asyncio.Lock()
+FILE_EXPIRY_HOURS = 1  # Files auto-delete after 1 hour
+
+UPLOADS_DIR = Path(__file__).parent.parent / "data" / "uploads"
+UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+
+
+# ============================================================================
+# MODULE 24: MULTI-RESUME COMPARISON MODELS (Phase 1)
+# ============================================================================
+
+class ResumeOnlyRequest(BaseModel):
+    """
+    Request model for resume-only evaluation (no link validation).
+    
+    MODULE 24: Used for comparing resumes where only content quality matters.
+    Scoring is limited to BERT (0-25) + LSTM (0-45) = 0-70 points max.
+    """
+    resume_text: str = Field(
+        ...,
+        description="Plain text extracted from resume (REQUIRED)",
+        min_length=50,
+        max_length=50000
+    )
+    experience_level: str = Field(
+        ...,
+        description="Experience level for evaluation context: Entry, Mid, Senior, or Expert",
+        example="Mid"
+    )
+    label: Optional[str] = Field(
+        default=None,
+        description="Optional label for identifying this resume (e.g., filename)",
+        max_length=100
+    )
+    
+    @field_validator('resume_text')
+    @classmethod
+    def validate_resume_text_content(cls, v: str) -> str:
+        """Validate resume text content."""
+        is_valid, error_msg = validate_resume_text(v)
+        if not is_valid:
+            raise ValueError(error_msg)
+        return v.strip()
+    
+    @field_validator('experience_level')
+    @classmethod
+    def validate_experience_level_value(cls, v: str) -> str:
+        """Validate experience level."""
+        is_valid, error_msg = validate_experience_level(v)
+        if not is_valid:
+            raise ValueError(error_msg)
+        return v.capitalize() if v.lower() in ['entry', 'mid', 'senior', 'expert'] else v
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "resume_text": "Experienced software developer with 5 years of experience...",
+                "experience_level": "Mid",
+                "label": "John_Resume.pdf"
+            }
+        }
+
+
+class ResumeOnlyScores(BaseModel):
+    """Score breakdown for resume-only evaluation."""
+    bert_score: float = Field(..., description="BERT language quality score (0-25)")
+    bert_max: int = Field(default=25, description="Maximum BERT score")
+    lstm_score: float = Field(..., description="LSTM project pattern score (0-45)")
+    lstm_max: int = Field(default=45, description="Maximum LSTM score")
+    resume_score: float = Field(..., description="Total resume score (0-70)")
+    resume_max: int = Field(default=70, description="Maximum resume score")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "bert_score": 22.5,
+                "bert_max": 25,
+                "lstm_score": 38.2,
+                "lstm_max": 45,
+                "resume_score": 60.7,
+                "resume_max": 70
+            }
+        }
+
+
+class ResumeOnlyResponse(BaseModel):
+    """
+    Response model for resume-only evaluation.
+    
+    MODULE 24: Returns BERT + LSTM scores only (no heuristic/link validation).
+    """
+    label: str = Field(..., description="Resume identifier/label")
+    scores: ResumeOnlyScores = Field(..., description="Score breakdown")
+    risk_level: str = Field(..., description="Risk level based on resume content (LOW/MEDIUM/HIGH)")
+    flags: Dict[str, Any] = Field(..., description="Detected flags/observations")
+    key_strengths: List[str] = Field(default_factory=list, description="Key strengths identified")
+    key_concerns: List[str] = Field(default_factory=list, description="Key concerns identified")
+    processing_time_ms: int = Field(..., description="Processing time in milliseconds")
+    timestamp: str = Field(..., description="Evaluation timestamp")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "label": "John_Resume.pdf",
+                "scores": {
+                    "bert_score": 22.5,
+                    "bert_max": 25,
+                    "lstm_score": 38.2,
+                    "lstm_max": 45,
+                    "resume_score": 60.7,
+                    "resume_max": 70
+                },
+                "risk_level": "LOW",
+                "flags": {"has_flags": True, "total_count": 2, "observations": []},
+                "key_strengths": ["Strong action verbs", "Clear project timeline"],
+                "key_concerns": ["Some terminology inconsistencies"],
+                "processing_time_ms": 2500,
+                "timestamp": "2026-03-03T12:00:00Z"
+            }
+        }
+
+
+class ResumeInput(BaseModel):
+    """Individual resume input for batch comparison."""
+    resume_text: str = Field(
+        ...,
+        description="Plain text extracted from resume",
+        min_length=50,
+        max_length=50000
+    )
+    label: str = Field(
+        ...,
+        description="Label/identifier for this resume (e.g., filename)",
+        min_length=1,
+        max_length=100
+    )
+    
+    @field_validator('resume_text')
+    @classmethod
+    def validate_resume_text_content(cls, v: str) -> str:
+        """Validate resume text content."""
+        is_valid, error_msg = validate_resume_text(v)
+        if not is_valid:
+            raise ValueError(error_msg)
+        return v.strip()
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "resume_text": "Experienced software developer with 5 years...",
+                "label": "Candidate_A.pdf"
+            }
+        }
+
+
+class ComparisonRequest(BaseModel):
+    """
+    Request model for batch resume comparison.
+    
+    MODULE 24: Compare 2-3 resumes simultaneously using the same experience level.
+    All resumes are scored on content only (BERT + LSTM).
+    
+    The original_evaluation field allows passing pre-computed scores for the
+    first resume to avoid re-evaluation (saves time and ensures consistency).
+    """
+    resumes: List[ResumeInput] = Field(
+        ...,
+        description="List of resumes to compare (2-3 resumes)",
+        min_length=2,
+        max_length=3
+    )
+    experience_level: str = Field(
+        ...,
+        description="Shared experience level for all candidates: Entry, Mid, Senior, or Expert",
+        example="Mid"
+    )
+    original_evaluation: Optional['OriginalEvaluation'] = Field(
+        default=None,
+        description="Pre-computed evaluation results for the first resume (optional). If provided, the first resume will not be re-evaluated."
+    )
+    
+    @field_validator('experience_level')
+    @classmethod
+    def validate_experience_level_value(cls, v: str) -> str:
+        """Validate experience level."""
+        is_valid, error_msg = validate_experience_level(v)
+        if not is_valid:
+            raise ValueError(error_msg)
+        return v.capitalize() if v.lower() in ['entry', 'mid', 'senior', 'expert'] else v
+    
+    @model_validator(mode='after')
+    def validate_resumes_list(self) -> 'ComparisonRequest':
+        """Validate resumes list size and unique labels."""
+        if len(self.resumes) < 2:
+            raise ValueError("At least 2 resumes required for comparison")
+        if len(self.resumes) > 3:
+            raise ValueError("Maximum 3 resumes allowed for comparison")
+        
+        # Check for unique labels
+        labels = [r.label for r in self.resumes]
+        if len(labels) != len(set(labels)):
+            raise ValueError("All resume labels must be unique")
+        
+        return self
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "resumes": [
+                    {"resume_text": "John Doe - Software Engineer...", "label": "John_Resume.pdf"},
+                    {"resume_text": "Jane Smith - Developer...", "label": "Jane_Resume.pdf"}
+                ],
+                "experience_level": "Senior"
+            }
+        }
+
+
+class OriginalEvaluation(BaseModel):
+    """
+    Pre-computed evaluation results for the original resume.
+    
+    MODULE 24: Allows passing the original resume's evaluation results
+    to avoid re-evaluating during comparison (saves processing time and
+    ensures consistent scores).
+    """
+    bert_score: float = Field(
+        ...,
+        description="BERT score from initial evaluation (0-25)",
+        ge=0,
+        le=25
+    )
+    lstm_score: float = Field(
+        ...,
+        description="LSTM score from initial evaluation (0-45)",
+        ge=0,
+        le=45
+    )
+    resume_score: float = Field(
+        ...,
+        description="Total resume score from initial evaluation (0-70)",
+        ge=0,
+        le=70
+    )
+    risk_level: str = Field(
+        ...,
+        description="Risk level from initial evaluation (LOW/MEDIUM/HIGH)"
+    )
+    flags: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Flags from initial evaluation"
+    )
+    key_strengths: Optional[List[str]] = Field(
+        default=None,
+        description="Key strengths identified in initial evaluation"
+    )
+    key_concerns: Optional[List[str]] = Field(
+        default=None,
+        description="Key concerns identified in initial evaluation"
+    )
+    
+    @field_validator('risk_level')
+    @classmethod
+    def validate_risk_level(cls, v: str) -> str:
+        """Validate risk level value."""
+        valid_levels = ['LOW', 'MEDIUM', 'HIGH']
+        if v.upper() not in valid_levels:
+            raise ValueError(f"Risk level must be one of: {valid_levels}")
+        return v.upper()
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "bert_score": 22.36,
+                "lstm_score": 37.93,
+                "resume_score": 60.29,
+                "risk_level": "LOW",
+                "flags": {"total": 4, "high_severity": 0, "medium_severity": 3, "low_severity": 1},
+                "key_strengths": ["Strong language quality", "Good project documentation"],
+                "key_concerns": []
+            }
+        }
+
+
+class CandidateScores(BaseModel):
+    """Score breakdown for a candidate in comparison."""
+    bert_score: float = Field(..., description="BERT language quality score (0-25)")
+    bert_max: int = Field(default=25, description="Maximum BERT score")
+    lstm_score: float = Field(..., description="LSTM project pattern score (0-45)")
+    lstm_max: int = Field(default=45, description="Maximum LSTM score")
+    resume_score: float = Field(..., description="Total resume score (0-70)")
+    resume_max: int = Field(default=70, description="Maximum resume score")
+
+
+class CandidateFlags(BaseModel):
+    """Flag summary for a candidate in comparison."""
+    total: int = Field(..., description="Total number of flags")
+    high_severity: int = Field(default=0, description="Number of high severity flags")
+    medium_severity: int = Field(default=0, description="Number of medium severity flags")
+    low_severity: int = Field(default=0, description="Number of low severity flags")
+
+
+class CandidateResult(BaseModel):
+    """
+    Individual candidate result in a comparison.
+    
+    MODULE 24: Contains all scoring and analysis for one resume.
+    """
+    label: str = Field(..., description="Resume identifier/label")
+    position: int = Field(..., description="Position in the input array (1-indexed)")
+    scores: CandidateScores = Field(..., description="Score breakdown")
+    risk_level: str = Field(..., description="Risk level (LOW/MEDIUM/HIGH)")
+    flags: CandidateFlags = Field(..., description="Flag summary")
+    key_strengths: List[str] = Field(default_factory=list, description="Top strengths identified")
+    key_concerns: List[str] = Field(default_factory=list, description="Top concerns identified")
+    is_winner: bool = Field(default=False, description="Whether this is the winning candidate")
+    rank: int = Field(..., description="Rank among candidates (1 = best)")
+    processing_time_ms: int = Field(default=0, description="Processing time for this resume")
+    error: Optional[str] = Field(default=None, description="Error message if processing failed")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "label": "John_Resume.pdf",
+                "position": 1,
+                "scores": {
+                    "bert_score": 22.5,
+                    "bert_max": 25,
+                    "lstm_score": 38.2,
+                    "lstm_max": 45,
+                    "resume_score": 60.7,
+                    "resume_max": 70
+                },
+                "risk_level": "LOW",
+                "flags": {
+                    "total": 3,
+                    "high_severity": 0,
+                    "medium_severity": 2,
+                    "low_severity": 1
+                },
+                "key_strengths": ["Strong action verbs", "Clear project timeline"],
+                "key_concerns": ["Some terminology inconsistencies"],
+                "is_winner": True,
+                "rank": 1,
+                "processing_time_ms": 2500
+            }
+        }
+
+
+class ComparisonSummary(BaseModel):
+    """Summary of the comparison results."""
+    winner_label: str = Field(..., description="Label of the winning resume")
+    winner_score: float = Field(..., description="Winner's total resume score")
+    score_difference: float = Field(..., description="Score difference between 1st and 2nd place")
+    summary_text: str = Field(..., description="Human-readable comparison summary")
+
+
+class ComparisonResponse(BaseModel):
+    """
+    Response model for batch resume comparison.
+    
+    MODULE 24: Returns side-by-side comparison of 2-3 resumes with winner determination.
+    """
+    comparison_id: str = Field(..., description="Unique identifier for this comparison")
+    timestamp: str = Field(..., description="Comparison timestamp")
+    experience_level: str = Field(..., description="Shared experience level used")
+    total_candidates: int = Field(..., description="Number of candidates compared")
+    candidates: List[CandidateResult] = Field(..., description="Results for each candidate")
+    comparison_summary: ComparisonSummary = Field(..., description="Comparison summary with winner")
+    total_processing_time_ms: int = Field(..., description="Total processing time in milliseconds")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "comparison_id": "cmp_abc123",
+                "timestamp": "2026-03-03T12:00:00Z",
+                "experience_level": "Senior",
+                "total_candidates": 2,
+                "candidates": [
+                    {
+                        "label": "John_Resume.pdf",
+                        "position": 1,
+                        "scores": {
+                            "bert_score": 22.5,
+                            "bert_max": 25,
+                            "lstm_score": 38.2,
+                            "lstm_max": 45,
+                            "resume_score": 60.7,
+                            "resume_max": 70
+                        },
+                        "risk_level": "LOW",
+                        "flags": {"total": 3, "high_severity": 0, "medium_severity": 2, "low_severity": 1},
+                        "key_strengths": ["Strong action verbs"],
+                        "key_concerns": [],
+                        "is_winner": True,
+                        "rank": 1,
+                        "processing_time_ms": 2500
+                    }
+                ],
+                "comparison_summary": {
+                    "winner_label": "John_Resume.pdf",
+                    "winner_score": 60.7,
+                    "score_difference": 7.3,
+                    "summary_text": "John_Resume.pdf demonstrates stronger resume content..."
+                },
+                "total_processing_time_ms": 5200
+            }
+        }
+
+
+# ============================================================================
+# MODULE 26: INTERVIEW QUESTION GENERATOR MODELS
+# ============================================================================
+
+class InterviewQuestionModel(BaseModel):
+    """Single interview question with metadata and optional answer."""
+    question: str = Field(..., description="The interview question text")
+    category: str = Field(..., description="Question category: technical, project, or general")
+    answer: Optional[str] = Field(None, description="Expected answer for technical/general questions. None for project questions.")
+    difficulty: str = Field(..., description="Difficulty level: junior, mid, or senior")
+    related_skill: Optional[str] = Field(None, description="Related skill or topic (if applicable)")
+
+
+class InterviewQuestionRequest(BaseModel):
+    """
+    Request model for generating interview questions.
+    
+    MODULE 26: Generate targeted interview questions based on resume evaluation.
+    Uses Gemini AI to generate 10 questions:
+    - 4 Technical questions (with answers)
+    - 3 General/Behavioral questions (with answers)
+    - 3 Project questions (without answers - candidate-specific)
+    
+    Supports two modes:
+    1. file_id mode: Use a previously uploaded file to generate questions
+    2. evaluation_data mode: Provide evaluation data directly
+    """
+    file_id: Optional[str] = Field(
+        None,
+        description="ID of previously uploaded resume file. If provided, evaluation will be performed automatically.",
+        examples=["abc123def456"]
+    )
+    evaluation_data: Optional[Dict[str, Any]] = Field(
+        None,
+        description="Direct evaluation data containing skills, projects, and experience_level.",
+        examples=[{
+            "skills": ["Python", "Machine Learning", "FastAPI"],
+            "projects": [{"name": "ML Pipeline", "technologies": ["Python", "TensorFlow"]}],
+            "experience_level": "Senior"
+        }]
+    )
+    role_context: Optional[str] = Field(
+        None,
+        description="Optional job description or role context for customizing questions.",
+        max_length=5000,
+        examples=["Senior Backend Developer with ML experience"]
+    )
+    experience_level: Optional[str] = Field(
+        "Mid",
+        description="Experience level for question difficulty. Options: Junior, Mid, Senior",
+        examples=["Junior", "Mid", "Senior"]
+    )
+    
+    @field_validator("experience_level")
+    @classmethod
+    def validate_experience_level(cls, v):
+        if v is not None:
+            valid = ["Junior", "Mid", "Senior", "junior", "mid", "senior"]
+            if v not in valid:
+                raise ValueError(f"experience_level must be one of: Junior, Mid, Senior")
+            return v.title()
+        return v
+    
+    @model_validator(mode='after')
+    def validate_input_mode(self):
+        """Ensure at least one input mode is provided."""
+        if not self.file_id and not self.evaluation_data:
+            raise ValueError("Either 'file_id' or 'evaluation_data' must be provided")
+        return self
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "file_id": "abc123def456",
+                "role_context": "Senior Backend Developer",
+                "experience_level": "Senior"
+            }
+        }
+
+
+class InterviewQuestionResponse(BaseModel):
+    """
+    Response model for generated interview questions.
+    
+    MODULE 26: Returns categorized interview questions with metadata.
+    
+    Question Types:
+    - Technical: Questions WITH answers (to help interviewers evaluate responses)
+    - General: Questions WITH answers (behavioral/situational)
+    - Project: Questions WITHOUT answers (candidate-specific, no expected answer)
+    """
+    success: bool = Field(..., description="Whether question generation was successful")
+    total_questions: int = Field(..., description="Total number of questions generated")
+    questions: List[InterviewQuestionModel] = Field(..., description="All generated questions")
+    categories: Dict[str, List[InterviewQuestionModel]] = Field(
+        ..., 
+        description="Questions organized by category (technical, project, general)"
+    )
+    category_counts: Dict[str, int] = Field(..., description="Count of questions per category")
+    generation_metadata: Dict[str, Any] = Field(..., description="Metadata about the generation process")
+    timestamp: str = Field(..., description="Response timestamp in ISO format")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "success": True,
+                "total_questions": 10,
+                "questions": [
+                    {
+                        "question": "Explain how Python's GIL affects multithreading.",
+                        "category": "technical",
+                        "answer": "The GIL (Global Interpreter Lock) prevents multiple native threads from executing Python bytecode simultaneously. This means CPU-bound tasks don't benefit from threading. Use multiprocessing for CPU-bound work or async for I/O-bound tasks.",
+                        "difficulty": "senior",
+                        "related_skill": "Python"
+                    },
+                    {
+                        "question": "Walk me through the architecture of your ML Pipeline project.",
+                        "category": "project",
+                        "answer": None,
+                        "difficulty": "senior",
+                        "related_skill": None
+                    }
+                ],
+                "categories": {
+                    "technical": [],
+                    "project": [],
+                    "general": []
+                },
+                "category_counts": {
+                    "technical": 4,
+                    "project": 3,
+                    "general": 3
+                },
+                "generation_metadata": {
+                    "skills_count": 5,
+                    "projects_count": 2,
+                    "gemini_powered": True,
+                    "generation_time_ms": 1500
+                },
+                "timestamp": "2026-03-04T12:00:00Z"
             }
         }
 
@@ -789,6 +1740,30 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ============================================================================
+# AUTHENTICATION ROUTES
+# ============================================================================
+
+app.include_router(auth_router)
+
+# ============================================================================
+# PROFILE ROUTES
+# ============================================================================
+
+app.include_router(profile_router)
+
+# ============================================================================
+# HISTORY ROUTES
+# ============================================================================
+
+app.include_router(history_router)
+
+# ============================================================================
+# CHAT ROUTES
+# ============================================================================
+
+app.include_router(chat_router)
 
 # ============================================================================
 # API ENDPOINTS
@@ -1015,6 +1990,33 @@ async def evaluate_freelancer(request: EvaluationRequest):
                 })
                 logger.warning(f"⚠️ Years missing flag detected")
             
+            # Add extraction flags to project_flags for UI display
+            extraction_flags = project_indicators.get('extraction_flags', {})
+            
+            if extraction_flags.get('project_name_missing_count', 0) > 0:
+                project_flags.append({
+                    'type': 'project_name_missing',
+                    'message': f"Project name missing for: {', '.join(extraction_flags.get('project_name_missing', []))}"
+                })
+            
+            if extraction_flags.get('end_date_missing_count', 0) > 0:
+                project_flags.append({
+                    'type': 'end_date_missing',
+                    'message': f"End date missing for: {', '.join(extraction_flags.get('end_date_missing', []))} (counted as 1 month each)"
+                })
+            
+            if extraction_flags.get('month_not_specified_count', 0) > 0:
+                project_flags.append({
+                    'type': 'month_not_specified',
+                    'message': f"Month not specified for: {', '.join(extraction_flags.get('month_not_specified', []))} (counted as 2 months each)"
+                })
+            
+            if extraction_flags.get('dates_missing_count', 0) > 0:
+                project_flags.append({
+                    'type': 'dates_missing',
+                    'message': f"No dates found for: {', '.join(extraction_flags.get('dates_missing', []))} (not counted in experience)"
+                })
+            
         except Exception as e:
             logger.error(f"❌ Project extraction failed: {str(e)}")
             # Use default values if extraction fails
@@ -1023,7 +2025,10 @@ async def evaluate_freelancer(request: EvaluationRequest):
                 'total_years': 0,
                 'average_project_duration_months': 0,
                 'overlapping_projects_count': 0,
+                'overlap_score': 0.0,  # NEW: 0-1 ratio
                 'technology_consistency_score': 0,
+                'skill_diversity': 0.0,  # NEW: 0-1 ratio
+                'technical_depth': 0.0,  # NEW: 0-1 ratio
                 'project_to_link_ratio': 0,
                 'years_missing': False
             }
@@ -1036,34 +2041,44 @@ async def evaluate_freelancer(request: EvaluationRequest):
         
         try:
             # Prepare indicators for LSTM (convert to the format it expects)
+            # IMPROVED v2.0: Using properly calculated metrics from project_extractor
             lstm_input_indicators = {
                 'num_projects': project_indicators['total_projects'],
                 'experience_years': project_indicators['total_years'],
                 'avg_duration': project_indicators['average_project_duration_months'],
-                'avg_overlap_score': min(project_indicators['overlapping_projects_count'] / max(project_indicators['total_projects'], 1), 1.0),
-                'skill_diversity': project_indicators['technology_consistency_score'],
-                'technical_depth': project_indicators['technology_consistency_score']
+                # NEW: Use overlap_score directly (already 0-1)
+                'avg_overlap_score': project_indicators.get('overlap_score', 0.0),
+                # NEW: Use skill_diversity directly (already 0-1)
+                'skill_diversity': project_indicators.get('skill_diversity', 
+                    project_indicators.get('technology_consistency_score', 0.0)),
+                # NEW: Use technical_depth directly (already 0-1)
+                'technical_depth': project_indicators.get('technical_depth', 
+                    project_indicators.get('technology_consistency_score', 0.0))
             }
             
             # Get trust probability and flags from LSTM
             trust_probability, lstm_result = lstm_inf.predict(request.resume_text, lstm_input_indicators)
-            lstm_flags = lstm_result.get('flags', [])
+            lstm_flags = lstm_result.get('ai_flags', {})
             
             # Calculate LSTM score (0-45 points)
-            lstm_score = lstm_scr.calculate_score(trust_probability)
+            # v4.1: Pass extraction_confidence to discount unreliable extractions
+            extraction_confidence = project_indicators.get('extraction_confidence', 1.0)
+            lstm_score = lstm_scr.calculate_score(trust_probability, extraction_confidence)
             
             logger.info(f"✓ LSTM Analysis Complete")
             logger.info(f"  Trust Probability: {trust_probability:.3f}")
-            logger.info(f"  LSTM Score: {lstm_score:.2f}/45")
+            logger.info(f"  Extraction Confidence: {extraction_confidence:.3f}")
+            logger.info(f"  LSTM Score: {lstm_score:.2f}/45 (confidence-adjusted)")
             logger.info(f"  Flags Generated: {len(lstm_flags)}")
             
         except Exception as e:
             logger.error(f"❌ LSTM processing failed: {str(e)}")
-            # Use fallback values
+            # Use fallback values with low confidence (extraction likely failed)
             trust_probability = 0.5
-            lstm_score = lstm_scr.calculate_score(trust_probability)
+            extraction_confidence = 0.5  # Low confidence since LSTM failed
+            lstm_score = lstm_scr.calculate_score(trust_probability, extraction_confidence)
             lstm_flags = []
-            logger.warning(f"⚠️ Using fallback LSTM score: {lstm_score:.2f}/45")
+            logger.warning(f"⚠️ Using fallback LSTM score: {lstm_score:.2f}/45 (low confidence)")
         
         # ====================================================================
         # STEP 5: CALCULATE RESUME SCORE
@@ -1164,13 +2179,23 @@ async def evaluate_freelancer(request: EvaluationRequest):
                 "source": "BERT"
             })
         
-        # Add LSTM flags (pattern-based)
-        for flag in lstm_flags:
-            all_flags.append({
-                "category": flag.get('type', 'Pattern'),
-                "message": flag.get('message', 'Pattern anomaly detected'),
-                "source": "LSTM"
-            })
+        # Add LSTM flags (pattern-based) - ai_flags is a dict of {flag_name: {flagged, severity, value, message}}
+        if isinstance(lstm_flags, dict):
+            for flag_name, flag_data in lstm_flags.items():
+                if isinstance(flag_data, dict) and flag_data.get('flagged', False):
+                    all_flags.append({
+                        "category": flag_name.replace('_', ' ').title(),
+                        "message": flag_data.get('message', 'Pattern anomaly detected'),
+                        "source": "LSTM",
+                        "severity": flag_data.get('severity', 'medium')
+                    })
+        elif isinstance(lstm_flags, list):
+            for flag in lstm_flags:
+                all_flags.append({
+                    "category": flag.get('type', 'Pattern'),
+                    "message": flag.get('message', 'Pattern anomaly detected'),
+                    "source": "LSTM"
+                })
         
         # Add Heuristic flags (validation-based)
         for flag in heuristic_flags:
@@ -1246,6 +2271,133 @@ async def evaluate_freelancer(request: EvaluationRequest):
             "experience_level": request.experience_level
         }
         
+        # ====================================================================
+        # STEP 10: GENERATE XAI EXPLANATIONS (Module 21 Add-on)
+        # ====================================================================
+        logger.info("\n📋 Step 10: Generating XAI Explanations...")
+        
+        explanations = None
+        try:
+            xai_engine = get_xai_engine()
+            if xai_engine is not None:
+                # Prepare data for XAI engine
+                bert_data = {
+                    'score': bert_score,
+                    'confidence': confidence_score,
+                    'flags': bert_flags
+                }
+                
+                lstm_data = {
+                    'score': lstm_score,
+                    'trust_probability': trust_probability,
+                    'flags': lstm_flags,
+                    'indicators': lstm_input_indicators
+                }
+                
+                heuristic_xai_data = {
+                    'github': {
+                        'score': heuristic_components.get('github', 0),
+                        'max_score': 10,
+                        'status': heuristic_breakdown.get('github', {}).get('status', 'unknown'),
+                        'details': heuristic_breakdown.get('github', {})
+                    },
+                    'linkedin': {
+                        'score': heuristic_components.get('linkedin', 0),
+                        'max_score': 10,
+                        'status': heuristic_breakdown.get('linkedin', {}).get('status', 'unknown'),
+                        'details': heuristic_breakdown.get('linkedin', {})
+                    },
+                    'portfolio': {
+                        'score': heuristic_components.get('portfolio', 0),
+                        'max_score': 5,
+                        'status': heuristic_breakdown.get('portfolio', {}).get('status', 'not_provided'),
+                        'provided': request.portfolio_url is not None,
+                        'details': heuristic_breakdown.get('portfolio', {})
+                    },
+                    'experience': {
+                        'score': heuristic_components.get('experience', 0),
+                        'max_score': 5,
+                        'match_result': heuristic_breakdown.get('experience', {}).get('match_result', 'unknown'),
+                        'user_level': request.experience_level,
+                        'detected_level': heuristic_breakdown.get('experience', {}).get('detected_level', 'Unknown'),
+                        'detected_years': project_indicators.get('total_years', 0),
+                        'detected_projects': project_indicators.get('total_projects', 0)
+                    }
+                }
+                
+                final_data = {
+                    'final_score': final_trust_score,
+                    'risk_level': risk_level,
+                    'recommendation': recommendation
+                }
+                
+                # Generate explanations
+                explanations = xai_engine.generate_all_explanations(
+                    bert_data=bert_data,
+                    lstm_data=lstm_data,
+                    heuristic_data=heuristic_xai_data,
+                    final_data=final_data
+                )
+                logger.info("✓ XAI Explanations generated successfully")
+            else:
+                logger.warning("⚠️ XAI Engine not available - skipping explanations")
+        except Exception as e:
+            logger.error(f"❌ XAI explanation generation failed: {str(e)}")
+            logger.warning("⚠️ Continuing without explanations")
+            explanations = None
+        
+        # ====================================================================
+        # STEP 11: GENERATE IMPROVEMENT SUGGESTIONS (Module 22 Add-on)
+        # ====================================================================
+        logger.info("\n💡 Step 11: Generating Improvement Suggestions...")
+        
+        suggestions_response = None
+        try:
+            sug_engine = get_suggestion_engine_api()
+            if sug_engine is not None:
+                # Prepare score data for suggestion engine
+                score_data = {
+                    'final_score': final_trust_score,
+                    'bert_score': bert_score,
+                    'lstm_score': lstm_score,
+                    'heuristic_score': heuristic_score
+                }
+                
+                # Generate suggestions from flags
+                suggestions_result = sug_engine.generate_suggestions(
+                    all_flags=all_flags,
+                    explanations=explanations,
+                    score_data=score_data,
+                    use_llm=True  # Enable LLM enhancement if available
+                )
+                
+                # Convert to SuggestionsResponse format
+                if suggestions_result.get('has_suggestions', False):
+                    suggestions_response = {
+                        'has_suggestions': True,
+                        'total_potential_gain': suggestions_result.get('total_potential_gain', 0),
+                        'suggestions': suggestions_result.get('suggestions', []),
+                        'summary': suggestions_result.get('summary', '')
+                    }
+                    logger.info(
+                        f"✓ Generated {len(suggestions_response['suggestions'])} suggestions "
+                        f"(potential gain: +{suggestions_response['total_potential_gain']} points)"
+                    )
+                else:
+                    suggestions_response = {
+                        'has_suggestions': False,
+                        'total_potential_gain': 0,
+                        'suggestions': [],
+                        'summary': suggestions_result.get('summary', 'No improvements needed.')
+                    }
+                    logger.info("✓ No suggestions needed - profile looks good!")
+            else:
+                logger.warning("⚠️ Suggestion Engine not available - skipping suggestions")
+        except Exception as e:
+            logger.error(f"❌ Suggestion generation failed: {str(e)}")
+            logger.warning("⚠️ Continuing without suggestions")
+            suggestions_response = None
+        
         # Build final response
         response_data = {
             "final_trust_score": round(final_trust_score, 2),
@@ -1256,6 +2408,8 @@ async def evaluate_freelancer(request: EvaluationRequest):
             "flags": flags_output,
             "summary": summary,
             "metadata": metadata,
+            "explanations": explanations,
+            "suggestions": suggestions_response,
             "timestamp": datetime.utcnow().isoformat() + "Z"
         }
         
@@ -1479,7 +2633,34 @@ async def upload_resume(
                 )
             
             # ============================================================
-            # STEP 5: PREPARE AND RETURN RESPONSE
+            # STEP 5: STORE ORIGINAL FILE FOR FUTURE RETRIEVAL
+            # ============================================================
+            file_id = str(uuid.uuid4())
+            upload_time = datetime.utcnow()
+            expiry_time = upload_time + timedelta(hours=FILE_EXPIRY_HOURS)
+            
+            # Store file in uploads directory
+            stored_file_path = UPLOADS_DIR / f"{file_id}{file_ext}"
+            with open(stored_file_path, 'wb') as stored_file:
+                stored_file.write(file_content)
+            
+            # Track file metadata in memory
+            async with _file_storage_lock:
+                _file_storage[file_id] = {
+                    "original_filename": file.filename,
+                    "file_path": str(stored_file_path),
+                    "file_type": file_ext,
+                    "file_size": file_size,
+                    "resume_text": cleaned_text,
+                    "uploaded_at": upload_time.isoformat() + "Z",
+                    "expires_at": expiry_time.isoformat() + "Z"
+                }
+            
+            logger.info(f"✓ File stored with ID: {file_id}")
+            logger.info(f"✓ Expires at: {expiry_time.isoformat()}")
+            
+            # ============================================================
+            # STEP 6: PREPARE AND RETURN RESPONSE
             # ============================================================
             # Create preview (first 500 characters)
             preview_length = 500
@@ -1492,11 +2673,14 @@ async def upload_resume(
             
             return UploadResponse(
                 filename=file.filename,
+                file_id=file_id,
                 file_size=file_size,
+                file_type=file_ext,
                 text_extracted=text_preview,
                 full_text=cleaned_text,
                 text_length=text_length,
-                upload_timestamp=datetime.utcnow().isoformat() + "Z"
+                upload_timestamp=upload_time.isoformat() + "Z",
+                expires_at=expiry_time.isoformat() + "Z"
             )
             
         except ValueError as e:
@@ -1529,14 +2713,940 @@ async def upload_resume(
     
     finally:
         # ============================================================
-        # CLEANUP: DELETE TEMPORARY FILE
+        # CLEANUP: DELETE TEMPORARY PROCESSING FILE (not stored file)
         # ============================================================
+        # Note: temp_file_path was the temp file used for parsing
+        # The stored file (stored_file_path) is kept for file retrieval
         if temp_file_path and os.path.exists(temp_file_path):
             try:
                 os.unlink(temp_file_path)
-                logger.info(f"🗑️ Temporary file cleaned up: {temp_file_path}")
+                logger.debug(f"🗑️ Temporary parsing file cleaned up: {temp_file_path}")
             except Exception as cleanup_error:
                 logger.warning(f"⚠️ Failed to cleanup temporary file: {cleanup_error}")
+
+
+# ============================================================================
+# MODULE 24: MULTI-RESUME COMPARISON ENDPOINTS (Phase 1)
+# ============================================================================
+
+def _process_resume_only_sync(
+    resume_text: str,
+    experience_level: str,
+    label: str,
+    position: int
+) -> Dict[str, Any]:
+    """
+    Internal helper function to process a single resume without link validation.
+    
+    MODULE 24: Used for resume-only evaluation and batch comparison.
+    Returns BERT + LSTM scores only (max 70 points).
+    
+    This is a SYNCHRONOUS function - call via asyncio.to_thread() for async contexts.
+    
+    Args:
+        resume_text: Resume text content
+        experience_level: Experience level for context
+        label: Resume identifier/label
+        position: Position in the batch (1-indexed)
+    
+    Returns:
+        Dictionary containing scores, flags, strengths, concerns, and processing time
+    """
+    start_time = time.time()
+    
+    try:
+        # Initialize components
+        bert_proc = get_bert_processor()
+        bert_scr = get_bert_scorer()
+        bert_flag = get_bert_flagger()
+        proj_ext = get_project_extractor()
+        lstm_inf = get_lstm_inference()
+        lstm_scr = get_lstm_scorer()
+        resume_scr = get_resume_scorer()
+        
+        # ================================================================
+        # STEP 1: BERT ANALYSIS
+        # ================================================================
+        pooled_embedding, _ = bert_proc.generate_embeddings(resume_text)
+        confidence_score, _ = bert_proc.calculate_confidence_score(resume_text)
+        bert_score = bert_scr.calculate_bert_score(confidence_score)
+        bert_flags = bert_flag.generate_flags(resume_text, pooled_embedding)
+        
+        # ================================================================
+        # STEP 2: PROJECT EXTRACTION
+        # ================================================================
+        try:
+            project_indicators = proj_ext.extract_all_indicators(resume_text)
+        except Exception:
+            project_indicators = {
+                'total_projects': 0,
+                'total_years': 0,
+                'average_project_duration_months': 0,
+                'overlap_score': 0.0,
+                'skill_diversity': 0.0,
+                'technical_depth': 0.0,
+                'extraction_confidence': 0.5
+            }
+        
+        # ================================================================
+        # STEP 3: LSTM ANALYSIS
+        # ================================================================
+        lstm_input_indicators = {
+            'num_projects': project_indicators.get('total_projects', 0),
+            'experience_years': project_indicators.get('total_years', 0),
+            'avg_duration': project_indicators.get('average_project_duration_months', 0),
+            'avg_overlap_score': project_indicators.get('overlap_score', 0.0),
+            'skill_diversity': project_indicators.get('skill_diversity', 0.0),
+            'technical_depth': project_indicators.get('technical_depth', 0.0)
+        }
+        
+        try:
+            trust_probability, lstm_result = lstm_inf.predict(resume_text, lstm_input_indicators)
+            lstm_flags = lstm_result.get('ai_flags', {})
+            extraction_confidence = project_indicators.get('extraction_confidence', 1.0)
+            lstm_score = lstm_scr.calculate_score(trust_probability, extraction_confidence)
+        except Exception:
+            trust_probability = 0.5
+            extraction_confidence = 0.5
+            lstm_score = lstm_scr.calculate_score(trust_probability, extraction_confidence)
+            lstm_flags = {}
+        
+        # ================================================================
+        # STEP 4: CALCULATE RESUME SCORE
+        # ================================================================
+        resume_score = resume_scr.calculate_resume_score(bert_score, lstm_score)
+        
+        # ================================================================
+        # STEP 5: DETERMINE RISK LEVEL (based on 70-point scale)
+        # ================================================================
+        # Map to percentage for risk calculation
+        resume_percentage = (resume_score / 70) * 100
+        if resume_percentage >= 80:
+            risk_level = "LOW"
+        elif resume_percentage >= 55:
+            risk_level = "MEDIUM"
+        else:
+            risk_level = "HIGH"
+        
+        # ================================================================
+        # STEP 6: AGGREGATE FLAGS
+        # ================================================================
+        all_flags = []
+        high_severity = 0
+        medium_severity = 0
+        low_severity = 0
+        
+        # Add BERT flags
+        for flag in bert_flags:
+            severity = flag.get('severity', 'medium').lower()
+            all_flags.append({
+                "category": flag.get('type', 'Language'),
+                "message": flag.get('description', flag.get('message', 'Language issue detected')),
+                "source": "BERT",
+                "severity": severity
+            })
+            if severity == 'high':
+                high_severity += 1
+            elif severity == 'low':
+                low_severity += 1
+            else:
+                medium_severity += 1
+        
+        # Add LSTM flags
+        if isinstance(lstm_flags, dict):
+            for flag_name, flag_data in lstm_flags.items():
+                if isinstance(flag_data, dict) and flag_data.get('flagged', False):
+                    severity = flag_data.get('severity', 'medium').lower()
+                    all_flags.append({
+                        "category": flag_name.replace('_', ' ').title(),
+                        "message": flag_data.get('message', 'Pattern anomaly detected'),
+                        "source": "LSTM",
+                        "severity": severity
+                    })
+                    if severity == 'high':
+                        high_severity += 1
+                    elif severity == 'low':
+                        low_severity += 1
+                    else:
+                        medium_severity += 1
+        
+        # ================================================================
+        # STEP 7: EXTRACT KEY STRENGTHS AND CONCERNS
+        # ================================================================
+        key_strengths = []
+        key_concerns = []
+        
+        # Analyze BERT performance
+        bert_percentage = (bert_score / 25) * 100
+        if bert_percentage >= 80:
+            key_strengths.append("Strong language quality and professional writing")
+        elif bert_percentage >= 65:
+            key_strengths.append("Good language quality overall")
+        elif bert_percentage < 50:
+            key_concerns.append("Language quality needs improvement")
+        
+        # Analyze LSTM performance
+        lstm_percentage = (lstm_score / 45) * 100
+        if lstm_percentage >= 80:
+            key_strengths.append("Excellent project pattern consistency")
+        elif lstm_percentage >= 65:
+            key_strengths.append("Good project documentation")
+        elif lstm_percentage < 50:
+            key_concerns.append("Project patterns could be clearer")
+        
+        # Add specific concerns from high-severity flags
+        for flag in all_flags:
+            if flag.get('severity') == 'high' and len(key_concerns) < 3:
+                concern_msg = flag.get('message', '')[:80]
+                if concern_msg and concern_msg not in key_concerns:
+                    key_concerns.append(concern_msg)
+        
+        # Processing time
+        processing_time_ms = int((time.time() - start_time) * 1000)
+        
+        return {
+            "success": True,
+            "label": label,
+            "position": position,
+            "scores": {
+                "bert_score": round(bert_score, 2),
+                "bert_max": 25,
+                "lstm_score": round(lstm_score, 2),
+                "lstm_max": 45,
+                "resume_score": round(resume_score, 2),
+                "resume_max": 70
+            },
+            "risk_level": risk_level,
+            "flags": {
+                "total": len(all_flags),
+                "high_severity": high_severity,
+                "medium_severity": medium_severity,
+                "low_severity": low_severity,
+                "observations": all_flags
+            },
+            "key_strengths": key_strengths[:3],  # Limit to top 3
+            "key_concerns": key_concerns[:3],    # Limit to top 3
+            "processing_time_ms": processing_time_ms
+        }
+        
+    except Exception as e:
+        processing_time_ms = int((time.time() - start_time) * 1000)
+        logger.error(f"❌ Resume processing failed for '{label}': {str(e)}")
+        return {
+            "success": False,
+            "label": label,
+            "position": position,
+            "scores": {
+                "bert_score": 0,
+                "bert_max": 25,
+                "lstm_score": 0,
+                "lstm_max": 45,
+                "resume_score": 0,
+                "resume_max": 70
+            },
+            "risk_level": "HIGH",
+            "flags": {"total": 0, "high_severity": 0, "medium_severity": 0, "low_severity": 0, "observations": []},
+            "key_strengths": [],
+            "key_concerns": ["Processing failed - unable to analyze this resume"],
+            "processing_time_ms": processing_time_ms,
+            "error": str(e)
+        }
+
+
+@app.post(
+    "/evaluate-resume-only",
+    response_model=ResumeOnlyResponse,
+    tags=["Evaluation"],
+    summary="Evaluate Resume Only (No Links)",
+    description="Evaluate resume content quality without link validation. Returns BERT + LSTM scores (max 70 points).",
+    status_code=status.HTTP_200_OK,
+    responses={
+        200: {"description": "Resume evaluation completed successfully"},
+        400: {"description": "Invalid input data"},
+        422: {"description": "Validation error"},
+        500: {"description": "Internal server error"}
+    }
+)
+async def evaluate_resume_only(request: ResumeOnlyRequest):
+    """
+    MODULE 24: Resume-only evaluation endpoint (Step 1.1)
+    
+    Evaluates resume content quality using only BERT and LSTM models.
+    No link validation is performed - useful for comparing resume content.
+    
+    Scoring:
+    - BERT Score (0-25): Language quality analysis
+    - LSTM Score (0-45): Project pattern analysis
+    - Total: 0-70 points maximum
+    
+    Args:
+        request: ResumeOnlyRequest with resume_text and experience_level
+    
+    Returns:
+        ResumeOnlyResponse: Resume scores, flags, strengths, and concerns
+    """
+    try:
+        logger.info("="*70)
+        logger.info("📄 RESUME-ONLY EVALUATION REQUEST")
+        logger.info("="*70)
+        logger.info(f"Label: {request.label or 'Unnamed'}")
+        logger.info(f"Experience Level: {request.experience_level}")
+        logger.info(f"Resume Length: {len(request.resume_text)} characters")
+        
+        # Process the resume (run sync function in thread pool)
+        label = request.label or f"Resume_{datetime.utcnow().strftime('%H%M%S')}"
+        result = await asyncio.to_thread(
+            _process_resume_only_sync,
+            request.resume_text,
+            request.experience_level,
+            label,
+            1
+        )
+        
+        if not result.get("success", False):
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail={
+                    "error": "ProcessingError",
+                    "message": result.get("error", "Failed to process resume"),
+                    "timestamp": datetime.utcnow().isoformat() + "Z"
+                }
+            )
+        
+        logger.info(f"✓ Resume Score: {result['scores']['resume_score']}/70")
+        logger.info(f"✓ Risk Level: {result['risk_level']}")
+        logger.info(f"✓ Processing Time: {result['processing_time_ms']}ms")
+        logger.info("="*70)
+        
+        return ResumeOnlyResponse(
+            label=result["label"],
+            scores=ResumeOnlyScores(**result["scores"]),
+            risk_level=result["risk_level"],
+            flags=result["flags"],
+            key_strengths=result["key_strengths"],
+            key_concerns=result["key_concerns"],
+            processing_time_ms=result["processing_time_ms"],
+            timestamp=datetime.utcnow().isoformat() + "Z"
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Resume-only evaluation error: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "error": "InternalServerError",
+                "message": "Failed to evaluate resume. Please try again.",
+                "timestamp": datetime.utcnow().isoformat() + "Z"
+            }
+        )
+
+
+@app.post(
+    "/compare-resumes",
+    response_model=ComparisonResponse,
+    tags=["Evaluation"],
+    summary="Compare Multiple Resumes",
+    description="Compare 2-3 resumes side-by-side with parallel processing. Returns scores, rankings, and winner.",
+    status_code=status.HTTP_200_OK,
+    responses={
+        200: {"description": "Comparison completed successfully"},
+        400: {"description": "Invalid input data"},
+        422: {"description": "Validation error"},
+        500: {"description": "Internal server error"}
+    }
+)
+async def compare_resumes(request: ComparisonRequest):
+    """
+    MODULE 24: Batch resume comparison endpoint (Step 1.2 + 1.4)
+    
+    Compares 2-3 resumes simultaneously using parallel processing.
+    All resumes are evaluated using the same experience level.
+    
+    Features:
+    - Parallel processing with asyncio.gather()
+    - 60-second timeout per resume
+    - Error handling for individual failures
+    - Winner determination and ranking
+    - Processing time monitoring
+    
+    Scoring (per resume):
+    - BERT Score (0-25): Language quality
+    - LSTM Score (0-45): Project patterns
+    - Total: 0-70 points maximum
+    
+    Args:
+        request: ComparisonRequest with list of resumes and experience_level
+    
+    Returns:
+        ComparisonResponse: All candidates ranked with winner and summary
+    """
+    total_start_time = time.time()
+    comparison_id = f"cmp_{uuid.uuid4().hex[:12]}"
+    
+    try:
+        logger.info("="*70)
+        logger.info("⚖️ MULTI-RESUME COMPARISON REQUEST")
+        logger.info("="*70)
+        logger.info(f"Comparison ID: {comparison_id}")
+        logger.info(f"Experience Level: {request.experience_level}")
+        logger.info(f"Number of Candidates: {len(request.resumes)}")
+        logger.info(f"Original Evaluation Provided: {request.original_evaluation is not None}")
+        for i, resume in enumerate(request.resumes, 1):
+            logger.info(f"  Candidate {i}: {resume.label} ({len(resume.resume_text)} chars)")
+        
+        # ================================================================
+        # STEP 1: PARALLEL PROCESSING WITH TIMEOUT
+        # ================================================================
+        if request.original_evaluation is not None:
+            logger.info("\n📋 Processing additional resumes only (using cached original)...")
+        else:
+            logger.info("\n📋 Processing all resumes in parallel...")
+        
+        # Create async wrapper functions with captured variables
+        async def process_with_timeout(resume_text: str, exp_level: str, lbl: str, pos: int) -> Dict[str, Any]:
+            """Process a single resume with timeout."""
+            return await asyncio.wait_for(
+                asyncio.to_thread(
+                    _process_resume_only_sync,
+                    resume_text,
+                    exp_level,
+                    lbl,
+                    pos
+                ),
+                timeout=60.0  # 60-second timeout per resume
+            )
+        
+        # ================================================================
+        # CHECK FOR PRE-COMPUTED ORIGINAL EVALUATION
+        # ================================================================
+        results = []
+        start_index = 0  # Index from which to start parallel processing
+        
+        if request.original_evaluation is not None:
+            # Use pre-computed results for the first resume
+            logger.info("📦 Using pre-computed evaluation for original resume (skipping re-evaluation)")
+            
+            original_resume = request.resumes[0]
+            orig_eval = request.original_evaluation
+            
+            # Build flags dict from original evaluation
+            original_flags = orig_eval.flags or {
+                "total": 0,
+                "high_severity": 0,
+                "medium_severity": 0,
+                "low_severity": 0,
+                "observations": []
+            }
+            
+            # Create result for original resume using pre-computed values
+            original_result = {
+                "success": True,
+                "label": original_resume.label,
+                "position": 1,
+                "scores": {
+                    "bert_score": round(orig_eval.bert_score, 2),
+                    "bert_max": 25,
+                    "lstm_score": round(orig_eval.lstm_score, 2),
+                    "lstm_max": 45,
+                    "resume_score": round(orig_eval.resume_score, 2),
+                    "resume_max": 70
+                },
+                "risk_level": orig_eval.risk_level,
+                "flags": original_flags,
+                "key_strengths": orig_eval.key_strengths or [],
+                "key_concerns": orig_eval.key_concerns or [],
+                "processing_time_ms": 0  # No processing time - used cached results
+            }
+            
+            results.append(original_result)
+            logger.info(f"✓ Candidate 1 (cached): {original_result['scores']['resume_score']}/70")
+            
+            start_index = 1  # Start processing from the second resume
+        
+        # Create tasks for parallel processing (skip first resume if original_evaluation was provided)
+        tasks = []
+        task_index_map = []  # Track which resume index each task corresponds to
+        
+        for i, resume in enumerate(request.resumes):
+            if i < start_index:
+                continue  # Skip resumes that already have results
+            
+            task = asyncio.create_task(
+                process_with_timeout(
+                    resume.resume_text,
+                    request.experience_level,
+                    resume.label,
+                    i + 1  # position is 1-indexed
+                )
+            )
+            tasks.append(task)
+            task_index_map.append(i)
+        
+        # Execute all tasks in parallel with individual error handling
+        for task_idx, task in enumerate(tasks):
+            resume_idx = task_index_map[task_idx]  # Get the actual resume index
+            try:
+                result = await task
+                results.append(result)
+                logger.info(f"✓ Candidate {resume_idx+1} processed: {result['scores']['resume_score']}/70")
+            except asyncio.TimeoutError:
+                logger.error(f"❌ Candidate {resume_idx+1} timed out after 60 seconds")
+                results.append({
+                    "success": False,
+                    "label": request.resumes[resume_idx].label,
+                    "position": resume_idx + 1,
+                    "scores": {"bert_score": 0, "bert_max": 25, "lstm_score": 0, "lstm_max": 45, "resume_score": 0, "resume_max": 70},
+                    "risk_level": "HIGH",
+                    "flags": {"total": 0, "high_severity": 0, "medium_severity": 0, "low_severity": 0},
+                    "key_strengths": [],
+                    "key_concerns": ["Processing timed out"],
+                    "processing_time_ms": 60000,
+                    "error": "Processing timed out after 60 seconds"
+                })
+            except Exception as e:
+                logger.error(f"❌ Candidate {resume_idx+1} failed: {str(e)}")
+                results.append({
+                    "success": False,
+                    "label": request.resumes[resume_idx].label,
+                    "position": resume_idx + 1,
+                    "scores": {"bert_score": 0, "bert_max": 25, "lstm_score": 0, "lstm_max": 45, "resume_score": 0, "resume_max": 70},
+                    "risk_level": "HIGH",
+                    "flags": {"total": 0, "high_severity": 0, "medium_severity": 0, "low_severity": 0},
+                    "key_strengths": [],
+                    "key_concerns": ["Processing failed"],
+                    "processing_time_ms": 0,
+                    "error": str(e)
+                })
+        
+        # ================================================================
+        # STEP 2: RANK CANDIDATES AND DETERMINE WINNER
+        # ================================================================
+        logger.info("\n📊 Ranking candidates...")
+        
+        # Sort by resume_score descending
+        sorted_results = sorted(
+            results,
+            key=lambda x: x['scores']['resume_score'],
+            reverse=True
+        )
+        
+        # Assign ranks
+        for rank, result in enumerate(sorted_results, 1):
+            result['rank'] = rank
+            result['is_winner'] = (rank == 1)
+        
+        # Get winner info
+        winner = sorted_results[0]
+        runner_up = sorted_results[1] if len(sorted_results) > 1 else None
+        score_difference = round(
+            winner['scores']['resume_score'] - (runner_up['scores']['resume_score'] if runner_up else 0),
+            2
+        )
+        
+        # ================================================================
+        # STEP 3: GENERATE COMPARISON SUMMARY
+        # ================================================================
+        # Build summary text
+        if score_difference == 0 and runner_up:
+            summary_text = (
+                f"{winner['label']} and {runner_up['label']} are tied with {winner['scores']['resume_score']}/70 points. "
+                f"Both candidates demonstrate similar resume content quality."
+            )
+        elif score_difference < 5:
+            summary_text = (
+                f"{winner['label']} leads with {winner['scores']['resume_score']}/70 points, "
+                f"only {score_difference} points ahead. The candidates are closely matched."
+            )
+        else:
+            # Determine where the advantage comes from
+            bert_diff = round(winner['scores']['bert_score'] - (runner_up['scores']['bert_score'] if runner_up else 0), 1)
+            lstm_diff = round(winner['scores']['lstm_score'] - (runner_up['scores']['lstm_score'] if runner_up else 0), 1)
+            
+            advantage_parts = []
+            if bert_diff > 2:
+                advantage_parts.append(f"language quality (+{bert_diff} BERT)")
+            if lstm_diff > 3:
+                advantage_parts.append(f"project documentation (+{lstm_diff} LSTM)")
+            
+            advantage_text = " and ".join(advantage_parts) if advantage_parts else "overall content quality"
+            
+            summary_text = (
+                f"{winner['label']} demonstrates stronger resume content with {winner['scores']['resume_score']}/70 points, "
+                f"{score_difference} points ahead. The main advantage is in {advantage_text}."
+            )
+        
+        # ================================================================
+        # STEP 4: BUILD RESPONSE
+        # ================================================================
+        total_processing_time_ms = int((time.time() - total_start_time) * 1000)
+        
+        # Convert results to CandidateResult format (maintaining original order)
+        candidates = []
+        for result in results:
+            # Find rank for this result
+            for ranked in sorted_results:
+                if ranked['label'] == result['label']:
+                    result['rank'] = ranked['rank']
+                    result['is_winner'] = ranked['is_winner']
+                    break
+            
+            candidates.append(CandidateResult(
+                label=result['label'],
+                position=result['position'],
+                scores=CandidateScores(**result['scores']),
+                risk_level=result['risk_level'],
+                flags=CandidateFlags(**{k: v for k, v in result['flags'].items() if k != 'observations'}),
+                key_strengths=result['key_strengths'],
+                key_concerns=result['key_concerns'],
+                is_winner=result.get('is_winner', False),
+                rank=result.get('rank', len(results)),
+                processing_time_ms=result['processing_time_ms'],
+                error=result.get('error')
+            ))
+        
+        comparison_summary = ComparisonSummary(
+            winner_label=winner['label'],
+            winner_score=winner['scores']['resume_score'],
+            score_difference=score_difference,
+            summary_text=summary_text
+        )
+        
+        logger.info(f"\n🏆 Winner: {winner['label']} ({winner['scores']['resume_score']}/70)")
+        logger.info(f"⏱️ Total Processing Time: {total_processing_time_ms}ms")
+        logger.info("="*70)
+        
+        return ComparisonResponse(
+            comparison_id=comparison_id,
+            timestamp=datetime.utcnow().isoformat() + "Z",
+            experience_level=request.experience_level,
+            total_candidates=len(request.resumes),
+            candidates=candidates,
+            comparison_summary=comparison_summary,
+            total_processing_time_ms=total_processing_time_ms
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Comparison error: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "error": "InternalServerError",
+                "message": "Failed to compare resumes. Please try again.",
+                "comparison_id": comparison_id,
+                "timestamp": datetime.utcnow().isoformat() + "Z"
+            }
+        )
+
+
+# ============================================================================
+# FILE CLEANUP UTILITIES
+# ============================================================================
+
+async def cleanup_expired_files():
+    """
+    Background task to clean up expired uploaded files.
+    
+    Removes files that have exceeded FILE_EXPIRY_HOURS.
+    """
+    current_time = datetime.utcnow()
+    expired_ids = []
+    
+    async with _file_storage_lock:
+        for file_id, file_info in _file_storage.items():
+            expires_at_str = file_info.get("expires_at", "")
+            if expires_at_str:
+                try:
+                    expires_at = datetime.fromisoformat(expires_at_str.replace("Z", ""))
+                    if current_time > expires_at:
+                        expired_ids.append(file_id)
+                except ValueError:
+                    pass
+        
+        # Remove expired entries and delete files
+        for file_id in expired_ids:
+            file_info = _file_storage.pop(file_id, {})
+            file_path = file_info.get("file_path")
+            if file_path and os.path.exists(file_path):
+                try:
+                    os.unlink(file_path)
+                    logger.info(f"🗑️ Expired file cleaned up: {file_id}")
+                except Exception as e:
+                    logger.warning(f"⚠️ Failed to delete expired file {file_id}: {e}")
+    
+    if expired_ids:
+        logger.info(f"✓ Cleaned up {len(expired_ids)} expired files")
+
+
+@app.get(
+    "/files/{file_id}/status",
+    tags=["Files"],
+    summary="Check File Status",
+    description="Check if an uploaded file is still available and get its metadata.",
+    status_code=status.HTTP_200_OK,
+    responses={
+        200: {"description": "File status retrieved"},
+        404: {"description": "File not found or expired"}
+    }
+)
+async def get_file_status(file_id: str):
+    """
+    Check if a previously uploaded file is still available.
+    
+    Files expire after FILE_EXPIRY_HOURS (default: 1 hour).
+    
+    Args:
+        file_id: The file ID returned from /upload-resume
+    
+    Returns:
+        File metadata including expiration status
+    """
+    async with _file_storage_lock:
+        file_info = _file_storage.get(file_id)
+    
+    if not file_info:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={
+                "error": "FileNotFound",
+                "message": f"File with ID '{file_id}' not found or has expired",
+                "timestamp": datetime.utcnow().isoformat() + "Z"
+            }
+        )
+    
+    # Check if actually expired
+    expires_at_str = file_info.get("expires_at", "")
+    is_expired = False
+    if expires_at_str:
+        try:
+            expires_at = datetime.fromisoformat(expires_at_str.replace("Z", ""))
+            is_expired = datetime.utcnow() > expires_at
+        except ValueError:
+            pass
+    
+    return {
+        "file_id": file_id,
+        "original_filename": file_info.get("original_filename"),
+        "file_type": file_info.get("file_type"),
+        "file_size": file_info.get("file_size"),
+        "uploaded_at": file_info.get("uploaded_at"),
+        "expires_at": file_info.get("expires_at"),
+        "is_expired": is_expired,
+        "status": "expired" if is_expired else "available"
+    }
+
+
+# ============================================================================
+# MODULE 26: INTERVIEW QUESTION GENERATOR ENDPOINT
+# ============================================================================
+
+@app.post(
+    "/generate-interview-questions",
+    response_model=InterviewQuestionResponse,
+    tags=["Evaluation"],
+    summary="Generate Interview Questions",
+    description="Generate targeted interview questions based on resume evaluation. Supports both file_id and direct evaluation_data input.",
+    status_code=status.HTTP_200_OK,
+    responses={
+        200: {"description": "Interview questions generated successfully"},
+        400: {"description": "Invalid input - missing file_id or evaluation_data"},
+        404: {"description": "File not found"},
+        422: {"description": "Validation error"},
+        500: {"description": "Internal server error"}
+    }
+)
+async def generate_interview_questions(request: InterviewQuestionRequest):
+    """
+    MODULE 26: Interview Question Generator Endpoint
+    
+    Generates personalized interview questions based on resume evaluation results.
+    Questions are categorized into:
+    - Technical: Skill-specific questions
+    - Project: Deep-dive into claimed projects  
+    - Red Flag: Address suspicious patterns
+    - Behavioral: Soft skills assessment
+    
+    Input Modes:
+    1. file_id: Use previously uploaded resume (performs evaluation internally)
+    2. evaluation_data: Provide processed evaluation directly
+    
+    Args:
+        request: InterviewQuestionRequest containing file_id or evaluation_data
+        
+    Returns:
+        InterviewQuestionResponse: Categorized interview questions with metadata
+        
+    Raises:
+        HTTPException 400: Neither file_id nor evaluation_data provided
+        HTTPException 404: file_id not found in storage
+        HTTPException 500: Internal processing error
+    """
+    start_time = time.time()
+    
+    logger.info("="*70)
+    logger.info("🎯 INTERVIEW QUESTION GENERATION REQUEST")
+    logger.info("="*70)
+    
+    try:
+        evaluation_data = None
+        
+        # Mode 1: Get data from file_id
+        if request.file_id:
+            logger.info(f"📁 Using file_id: {request.file_id}")
+            
+            async with _file_storage_lock:
+                if request.file_id not in _file_storage:
+                    logger.warning(f"❌ File not found: {request.file_id}")
+                    raise HTTPException(
+                        status_code=status.HTTP_404_NOT_FOUND,
+                        detail={
+                            "error": "FileNotFound",
+                            "message": f"File with ID '{request.file_id}' not found. It may have expired or been deleted.",
+                            "timestamp": datetime.utcnow().isoformat() + "Z"
+                        }
+                    )
+                
+                file_info = _file_storage[request.file_id]
+                resume_text = file_info.get("resume_text", "")
+                
+                if not resume_text:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail={
+                            "error": "NoResumeText",
+                            "message": "File exists but resume text could not be extracted.",
+                            "timestamp": datetime.utcnow().isoformat() + "Z"
+                        }
+                    )
+            
+            logger.info(f"  Resume text length: {len(resume_text)} chars")
+            
+            # Build minimal evaluation data from resume text
+            # Extract skills using BERT processor
+            try:
+                bert_processor = BERTProcessor()
+                bert_result = bert_processor.process_resume(resume_text)
+                
+                # Extract projects
+                project_extractor = ProjectExtractor()
+                projects = project_extractor.extract_projects(resume_text)
+                
+                evaluation_data = {
+                    "resume_text": resume_text,
+                    "skills": bert_result.get("skills", []),
+                    "projects": projects,
+                    "experience_level": request.experience_level or "Mid",
+                    "flags": bert_result.get("flags", []),
+                    "bert_result": bert_result
+                }
+                
+                logger.info(f"  Skills extracted: {len(evaluation_data['skills'])}")
+                logger.info(f"  Projects extracted: {len(evaluation_data['projects'])}")
+                
+            except Exception as e:
+                logger.warning(f"  Could not extract details, using basic data: {str(e)}")
+                evaluation_data = {
+                    "resume_text": resume_text,
+                    "skills": [],
+                    "projects": [],
+                    "experience_level": request.experience_level or "Mid",
+                    "flags": []
+                }
+        
+        # Mode 2: Use direct evaluation_data
+        elif request.evaluation_data:
+            logger.info("📊 Using direct evaluation_data")
+            evaluation_data = request.evaluation_data
+            
+            # Ensure experience_level is set
+            if "experience_level" not in evaluation_data:
+                evaluation_data["experience_level"] = request.experience_level or "Mid"
+        
+        else:
+            # This should already be caught by the validator, but just in case
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={
+                    "error": "InvalidInput",
+                    "message": "Either 'file_id' or 'evaluation_data' must be provided.",
+                    "timestamp": datetime.utcnow().isoformat() + "Z"
+                }
+            )
+        
+        # Generate interview questions using the InterviewGenerator
+        logger.info("\n🎯 Generating interview questions...")
+        
+        generator = get_interview_generator()
+        question_set = generator.generate_questions(
+            evaluation_data=evaluation_data,
+            role_context=request.role_context
+        )
+        
+        # Convert to response format
+        question_set_dict = question_set.to_dict()
+        
+        # Build response - use new format with answers
+        questions_list = [
+            InterviewQuestionModel(
+                question=q["question"],
+                category=q["category"],
+                answer=q.get("answer"),  # Will be None for project questions
+                difficulty=q["difficulty"],
+                related_skill=q.get("related_skill")
+            )
+            for q in question_set_dict["questions"]
+        ]
+        
+        categories_dict = {
+            cat: [
+                InterviewQuestionModel(
+                    question=q["question"],
+                    category=q["category"],
+                    answer=q.get("answer"),  # Will be None for project questions
+                    difficulty=q["difficulty"],
+                    related_skill=q.get("related_skill")
+                )
+                for q in questions
+            ]
+            for cat, questions in question_set_dict["categories"].items()
+        }
+        
+        processing_time = (time.time() - start_time) * 1000
+        
+        logger.info(f"\n✅ Generated {question_set_dict['total_questions']} questions in {processing_time:.0f}ms")
+        logger.info("="*70)
+        
+        return InterviewQuestionResponse(
+            success=True,
+            total_questions=question_set_dict["total_questions"],
+            questions=questions_list,
+            categories=categories_dict,
+            category_counts=question_set_dict["category_counts"],
+            generation_metadata={
+                **question_set_dict["generation_metadata"],
+                "processing_time_ms": int(processing_time),
+                "input_mode": "file_id" if request.file_id else "evaluation_data"
+            },
+            timestamp=datetime.utcnow().isoformat() + "Z"
+        )
+        
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        raise
+        
+    except Exception as e:
+        logger.error(f"❌ Interview question generation error: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "error": "InternalServerError",
+                "message": "Failed to generate interview questions. Please try again.",
+                "timestamp": datetime.utcnow().isoformat() + "Z"
+            }
+        )
 
 
 # ============================================================================
@@ -1586,13 +3696,20 @@ async def startup_event():
     logger.info("  GET  /health - Health check")
     logger.info("  POST /evaluate - Main evaluation endpoint")
     logger.info("  POST /upload-resume - File upload handler")
+    logger.info("  POST /evaluate-resume-only - Resume-only evaluation (Module 24)")
+    logger.info("  POST /compare-resumes - Multi-resume comparison (Module 24)")
+    logger.info("  POST /generate-interview-questions - Interview question generator (Module 26)")
+    logger.info("  GET  /files/{file_id}/status - Check uploaded file status")
     logger.info("Documentation available at:")
     logger.info("  /docs - Swagger UI")
     logger.info("  /redoc - ReDoc")
     logger.info("="*70)
     
-    # TODO: Load ML models here (Step 6.3)
-    logger.info("Note: ML models will be loaded in Step 6.3")
+    # Ensure uploads directory exists
+    UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+    logger.info(f"Uploads directory: {UPLOADS_DIR}")
+    
+    logger.info("Note: ML models will be loaded on first request")
 
 
 @app.on_event("shutdown")

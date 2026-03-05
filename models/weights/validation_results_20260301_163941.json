@@ -1,0 +1,214 @@
+{
+  "timestamp": "20260301_163941",
+  "phase": "4 (Validation -- Retrain.md v2.5)",
+  "model_file": "lstm_best_20260301_160732.pth",
+  "label_encoding": "suspicious=1, trustworthy=0",
+  "sensitivity_tests": {
+    "results": [
+      {
+        "test_case": "Legitimate Entry",
+        "indicators": {
+          "num_projects": 3,
+          "experience_years": 1,
+          "technical_depth": 0.75
+        },
+        "trust_probability": 0.9986,
+        "suspiciousness": 0.0014,
+        "expected": ">0.85",
+        "passed": true
+      },
+      {
+        "test_case": "Inflated Claims",
+        "indicators": {
+          "num_projects": 25,
+          "experience_years": 1
+        },
+        "trust_probability": 0.3474,
+        "suspiciousness": 0.6526,
+        "expected": "<0.60",
+        "passed": true
+      },
+      {
+        "test_case": "Timeline Fraud",
+        "indicators": {
+          "avg_overlap_score": 0.8
+        },
+        "trust_probability": 0.0097,
+        "suspiciousness": 0.9903,
+        "expected": "<0.55",
+        "passed": true
+      },
+      {
+        "test_case": "Shallow Expert",
+        "indicators": {
+          "num_projects": 15,
+          "technical_depth": 0.2
+        },
+        "trust_probability": 0.003,
+        "suspiciousness": 0.997,
+        "expected": "<0.50",
+        "passed": true
+      },
+      {
+        "test_case": "Clean Senior",
+        "indicators": {
+          "num_projects": 20,
+          "experience_years": 8,
+          "technical_depth": 0.9
+        },
+        "trust_probability": 0.9993,
+        "suspiciousness": 0.0007,
+        "expected": ">0.90",
+        "passed": true
+      }
+    ],
+    "all_passed": true,
+    "passed_count": 5,
+    "total": 5
+  },
+  "resume_tests": {
+    "results": [
+      {
+        "name": "Gideon_2026 (Your Resume)",
+        "description": "Real experienced developer profile",
+        "indicators": {
+          "num_projects": 12,
+          "experience_years": 4,
+          "avg_duration": 5.5,
+          "avg_overlap_score": 0.05,
+          "skill_diversity": 0.8,
+          "technical_depth": 0.85
+        },
+        "trust_probability": 0.999,
+        "suspiciousness": 0.001,
+        "expected": "HIGH",
+        "passed": true
+      },
+      {
+        "name": "Legitimate Freelancer A",
+        "description": "Mid-level frontend developer, honest profile",
+        "indicators": {
+          "num_projects": 8,
+          "experience_years": 3,
+          "avg_duration": 4.0,
+          "avg_overlap_score": 0.08,
+          "skill_diversity": 0.65,
+          "technical_depth": 0.7
+        },
+        "trust_probability": 0.9985,
+        "suspiciousness": 0.0015,
+        "expected": "HIGH",
+        "passed": true
+      },
+      {
+        "name": "Legitimate Freelancer B",
+        "description": "Senior backend engineer, long track record",
+        "indicators": {
+          "num_projects": 22,
+          "experience_years": 9,
+          "avg_duration": 7.0,
+          "avg_overlap_score": 0.03,
+          "skill_diversity": 0.9,
+          "technical_depth": 0.92
+        },
+        "trust_probability": 0.9994,
+        "suspiciousness": 0.0006,
+        "expected": "HIGH",
+        "passed": true
+      },
+      {
+        "name": "Gideon_2026 (MODIFIED: Inflated)",
+        "description": "Your resume but with 40 projects in 1 year",
+        "indicators": {
+          "num_projects": 40,
+          "experience_years": 1,
+          "avg_duration": 0.8,
+          "avg_overlap_score": 0.35,
+          "skill_diversity": 0.8,
+          "technical_depth": 0.85
+        },
+        "trust_probability": 0.0013,
+        "suspiciousness": 0.9987,
+        "expected": "LOW",
+        "passed": true
+      },
+      {
+        "name": "Gideon_2026 (MODIFIED: Overlap)",
+        "description": "Your resume but with massive timeline conflicts",
+        "indicators": {
+          "num_projects": 12,
+          "experience_years": 4,
+          "avg_duration": 5.5,
+          "avg_overlap_score": 0.75,
+          "skill_diversity": 0.8,
+          "technical_depth": 0.85
+        },
+        "trust_probability": 0.9936,
+        "suspiciousness": 0.0064,
+        "expected": "LOW",
+        "passed": false
+      },
+      {
+        "name": "Gideon_2026 (MODIFIED: Shallow)",
+        "description": "Your resume but with many projects and low depth",
+        "indicators": {
+          "num_projects": 30,
+          "experience_years": 4,
+          "avg_duration": 1.2,
+          "avg_overlap_score": 0.15,
+          "skill_diversity": 0.2,
+          "technical_depth": 0.15
+        },
+        "trust_probability": 0.0006,
+        "suspiciousness": 0.9994,
+        "expected": "LOW",
+        "passed": true
+      },
+      {
+        "name": "Suspicious Freelancer C",
+        "description": "Brand new account claiming 35 projects in 2 years",
+        "indicators": {
+          "num_projects": 35,
+          "experience_years": 2,
+          "avg_duration": 0.6,
+          "avg_overlap_score": 0.5,
+          "skill_diversity": 0.25,
+          "technical_depth": 0.2
+        },
+        "trust_probability": 0.0005,
+        "suspiciousness": 0.9995,
+        "expected": "LOW",
+        "passed": true
+      }
+    ],
+    "all_passed": false,
+    "passed_count": 6,
+    "total": 7
+  },
+  "test_set_metrics": {
+    "accuracy": 1.0,
+    "suspicious_recall": 1.0,
+    "trustworthy_recall": 1.0,
+    "fpr": 0.0,
+    "fnr": 0.0,
+    "precision": 1.0,
+    "f1": 1.0,
+    "auc": 1.0,
+    "tp": 158,
+    "tn": 142,
+    "fp": 0,
+    "fn": 0,
+    "optimal_threshold": 0.5918899178504944,
+    "all_criteria_pass": true
+  },
+  "training_history": {
+    "epochs_trained": 16,
+    "best_train_loss": 0.0011013186991807,
+    "best_val_loss": 0.000843946202076,
+    "best_val_accuracy": 1.0,
+    "best_val_susp_recall": 1.0,
+    "best_val_auc": 1.0,
+    "train_loss_improved": true,
+    "val_loss_improved": true
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "timestamp": "20260301_171912",
+  "audit": "Retrain.md v2.5 Compliance",
+  "total_checks": 118,
+  "passed": 115,
+  "failed": 3,
+  "warnings": 0,
+  "all_passed": false
+}

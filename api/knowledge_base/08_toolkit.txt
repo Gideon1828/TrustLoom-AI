@@ -1,0 +1,84 @@
+SECTION: TOOLKIT FEATURES
+TOPIC: PDF Download, Candidate Comparison, Interview Questions, New Evaluation
+
+--- TOOLKIT OVERVIEW ---
+The Toolkit section on the Results page provides 5 action cards:
+1. Download Report (PDF)
+2. Score Explanations (XAI)
+3. Compare Candidates
+4. Interview Questions
+5. New Evaluation
+
+Each card has a title, description, and a category badge (Export, AI, or Compare).
+
+--- 1. DOWNLOAD REPORT (PDF) ---
+PURPOSE: Generate a downloadable PDF report of the evaluation.
+
+HOW TO USE:
+1. Click the "Download Report" card in the Toolkit section.
+2. A modal dialog opens where you can enter the Candidate Name (default is "Candidate").
+3. Click "Download PDF" to generate and download the report.
+4. Click "Cancel" to close without downloading.
+
+WHAT THE PDF INCLUDES:
+• Trust score and risk assessment
+• Detailed score breakdown (all components)
+• Observations and flags
+• Metadata and timestamp
+• The PDF is generated locally in your browser — no data is sent to a server.
+
+--- 2. SCORE EXPLANATIONS (XAI) ---
+PURPOSE: Toggle the detailed AI explanations section.
+
+HOW TO USE:
+1. Click the "Score Explanations" card.
+2. The XAI explanations section will appear below the charts.
+3. Click again to hide the section.
+4. The card shows "Currently Showing" when explanations are visible.
+(See the XAI Explanations knowledge base section for more details.)
+
+--- 3. COMPARE CANDIDATES ---
+PURPOSE: Compare the current candidate with 1 or 2 additional resumes side-by-side.
+
+HOW TO USE:
+1. Click the "Compare Candidates" card.
+2. A modal wizard opens with steps:
+   Step 1 (SELECT): Choose whether to compare with 1 additional resume (2-way) or 2 additional resumes (3-way).
+   Step 2 (UPLOAD): Upload the additional resume file(s) (PDF or DOCX, max 10 MB each).
+   Step 3 (PROCESSING): Wait while the system evaluates the additional resumes.
+   Step 4 (RESULTS): View the comparison table.
+3. If there is an error, you will see an error screen with a "Retry" button.
+
+WHAT THE COMPARISON SHOWS:
+• Side-by-side candidate scores
+• A winner determination (which candidate scored highest)
+• Score differences between candidates
+• Summary text comparing strengths
+
+--- 4. INTERVIEW QUESTIONS ---
+PURPOSE: Generate AI-tailored interview questions based on the candidate's profile.
+
+HOW TO USE:
+1. Click the "Interview Questions" card.
+2. Wait while questions are generated (shows a spinner with "Generating...").
+3. The interview questions panel appears.
+
+WHAT YOU GET:
+• 10 questions total in 3 categories:
+  - 4 Technical Questions — with expected answers and skill tags
+  - 3 General Questions — with expected answers (behavioral/situational)
+  - 3 Project Questions — without answers (specific to the candidate's projects)
+• Each question shows a difficulty badge: Junior, Mid, or Senior (color-coded).
+• Click a question to expand and see the expected answer (Technical and General only).
+• Copy button — copies a single question and answer to clipboard.
+• "Copy All" button — copies all questions.
+• "Regenerate" button — generates a fresh set of questions.
+• "Close" button — hides the panel.
+
+--- 5. NEW EVALUATION ---
+PURPOSE: Start a fresh evaluation from scratch.
+
+HOW TO USE:
+1. Click the "New Evaluation" card.
+2. You are taken back to the input form with all fields cleared.
+3. The previous results are no longer displayed.

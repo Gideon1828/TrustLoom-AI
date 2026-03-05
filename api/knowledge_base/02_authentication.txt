@@ -1,0 +1,46 @@
+SECTION: AUTHENTICATION AND ACCOUNT
+TOPIC: Login, Registration, Password, OAuth, Account Management
+
+--- LOGIN ---
+• Go to the login page at /login.
+• Enter your email and password, then click "Sign In."
+• You can also sign in with Google or GitHub using the social login buttons.
+• "Remember me" keeps your session active longer.
+• If you enter wrong credentials, you will see "Invalid login credentials."
+• After too many failed attempts, you will see "Too many login attempts. Please try again later."
+• If your session expires, you will be redirected to login with a message "Your session has expired. Please sign in again."
+
+--- REGISTRATION ---
+• Go to /register or click "Create an account" from the login page.
+• Required fields:
+  - Full Name (minimum 2 characters)
+  - Email (valid email address)
+  - Password (minimum 8 characters, must contain uppercase letter, lowercase letter, and a number)
+  - Confirm Password (must match)
+  - Accept Terms & Conditions (checkbox)
+• Optional field: Organization.
+• A password strength meter shows Weak / Fair / Good / Strong as you type.
+• You can also register with Google or GitHub.
+• After registering, you may need to check your email to confirm your account before logging in.
+
+--- FORGOT PASSWORD ---
+• Click "Forgot password?" on the login page.
+• Enter your email address and click "Send Reset Link."
+• Check your email for the reset instructions.
+• If no account exists with that email, you will see "No account found with this email address."
+
+--- GOOGLE / GITHUB LOGIN ---
+• Click the Google or GitHub button on the login or register page.
+• You will be redirected to the provider's login page.
+• After granting permission, you are redirected back to TrustLoom and signed in automatically.
+• OAuth users can later add a password from Profile Settings → Password tab.
+
+--- DELETE ACCOUNT ---
+• Open the user menu (click your avatar in the top-right corner).
+• Click "Delete Account" (red icon at the bottom of the menu).
+• A confirmation dialog will appear. This action is permanent and cannot be undone.
+• Deleting your account removes your profile, evaluation history, and profile picture.
+
+--- SIGN OUT ---
+• Open the user menu and click "Sign Out" at the bottom.
+• You will be redirected to the login page.

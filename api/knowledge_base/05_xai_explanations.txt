@@ -1,0 +1,62 @@
+SECTION: XAI EXPLANATIONS
+TOPIC: Score Explanations, Explainable AI, Understanding Why You Got This Score
+
+--- WHAT IS XAI (EXPLAINABLE AI)? ---
+• XAI stands for Explainable Artificial Intelligence.
+• In TrustLoom, it means the system explains WHY each score was given, not just the number.
+• This helps users understand exactly what contributed to the trust score and what can be improved.
+
+--- HOW TO VIEW XAI EXPLANATIONS ---
+1. On the Results page, find the Toolkit section.
+2. Click the "Score Explanations" card (labeled "AI").
+3. The XAI Explanations section will appear below the charts.
+4. Click the card again to hide it. The card shows "Currently Showing" when active.
+
+--- WHAT THE EXPLANATIONS COVER ---
+There are 6 component explanation cards plus 1 final assessment:
+
+1. LANGUAGE QUALITY (BERT)
+   • Explains the resume language analysis score (/25).
+   • Covers: writing quality, professional tone, action verbs, grammar.
+   • Score tiers: Excellent (≥20), Good (≥15), Average (≥10), Needs Attention (<10).
+
+2. PROJECT REALISM (LSTM)
+   • Explains the project pattern analysis score (/45).
+   • Covers: project authenticity, timeline consistency, technology patterns.
+   • Score tiers: Excellent (≥36), Good (≥27), Average (≥18), Needs Attention (<18).
+
+3. GITHUB VALIDATION
+   • Explains the GitHub profile score (/10).
+   • Covers: profile existence, repository count, activity level, contributions.
+   • Score tiers: Excellent (≥8), Good (≥6), Average (≥4), Needs Attention (<4).
+
+4. LINKEDIN VALIDATION
+   • Explains the LinkedIn profile score (/10).
+   • Covers: profile accessibility, completeness.
+   • Score tiers: Excellent (≥8), Good (≥6), Average (≥4), Needs Attention (<4).
+
+5. PORTFOLIO
+   • Explains the portfolio website score (/5).
+   • If no portfolio was provided, it explains that providing one could add extra points.
+   • Score tiers: Excellent (≥4), Good (≥3), Average (≥2), Needs Attention (<2).
+
+6. EXPERIENCE MATCH
+   • Explains whether the claimed experience level matches resume content (/5).
+   • Full match = 5 points, partial match = 3, mismatch = 0.
+
+7. FINAL ASSESSMENT
+   • Overall Trust Score summary with risk level.
+   • Comprehensive explanation of how all factors combined.
+   • Key Factors grid showing each component's impact (positive/neutral/negative) and status (strong/acceptable/weak).
+   • Recommendation description.
+
+--- EACH EXPLANATION CARD SHOWS ---
+• Icon and title.
+• Score out of maximum (e.g., "18 / 25") with a status badge (Excellent/Good/Average/Needs Attention).
+• Main explanation text (1–2 sentences summarizing the result).
+• A progress bar showing percentage of maximum score.
+• Expandable "Detailed Analysis" section — click to see specific findings.
+
+--- CONTROLS ---
+• "Expand All" button — opens all detailed analysis sections at once.
+• "Collapse All" button — closes all detailed analysis sections.

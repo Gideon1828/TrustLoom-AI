@@ -1,0 +1,450 @@
+/**
+ * Modal.css - Modal Component Styles
+ * 
+ * Used by ReportIssue and DeleteAccount modals
+ */
+
+/* ============================================================================
+   OVERLAY
+   ============================================================================ */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 1rem;
+  animation: fadeIn 0.2s ease;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ============================================================================
+   MODAL CONTENT
+   ============================================================================ */
+.modal-content {
+  background: var(--card-bg);
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* ============================================================================
+   HEADER
+   ============================================================================ */
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid var(--border-light);
+  flex-shrink: 0;
+}
+
+/* Form inside modal needs to flex to allow body scroll */
+.modal-content form {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  flex: 1;
+  min-height: 0;
+}
+
+.modal-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.modal-title.danger {
+  color: var(--error-text, #dc2626);
+}
+
+.modal-icon {
+  font-size: 1.75rem;
+}
+
+.modal-close {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 1.75rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-close:hover:not(:disabled) {
+  background: var(--border-medium);
+  color: var(--text-primary);
+  transform: rotate(90deg);
+}
+
+.modal-close:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ============================================================================
+   BODY
+   ============================================================================ */
+.modal-body {
+  padding: 2rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  flex: 1;
+  min-height: 0;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.form-label code {
+  background: var(--bg-tertiary);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-family: monospace;
+  font-weight: 700;
+  color: var(--error-text, #dc2626);
+}
+
+.form-input,
+.form-select,
+.form-textarea {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: var(--input-bg);
+  border: 2px solid var(--border-medium);
+  border-radius: 10px;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
+  outline: none;
+  border-color: var(--accent-purple);
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.form-select {
+  cursor: pointer;
+}
+
+/* ============================================================================
+   SUCCESS MESSAGE
+   ============================================================================ */
+.success-message {
+  text-align: center;
+  padding: 2rem;
+}
+
+.success-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: var(--success-bg, #d1fae5);
+  color: var(--success-text, #059669);
+  font-size: 3rem;
+  margin-bottom: 1.5rem;
+}
+
+.success-message h3 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 0.5rem 0;
+}
+
+.success-message p {
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* ============================================================================
+   WARNING BOX
+   ============================================================================ */
+.warning-box {
+  display: flex;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: var(--warning-bg, #fef3c7);
+  border: 2px solid var(--warning-border, #f59e0b);
+  border-radius: 10px;
+  margin-bottom: 1.5rem;
+}
+
+.warning-icon {
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.warning-box h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--error-text, #991b1b);
+  margin: 0 0 0.75rem 0;
+}
+
+.warning-box p {
+  color: var(--text-primary);
+  margin: 0 0 0.5rem 0;
+}
+
+.warning-box ul {
+  margin: 0.5rem 0 0 0;
+  padding-left: 1.5rem;
+}
+
+.warning-box li {
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+/* ============================================================================
+   ACCOUNT INFO
+   ============================================================================ */
+.account-info {
+  padding: 1.25rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  margin-bottom: 1.5rem;
+}
+
+.account-info p {
+  margin: 0 0 0.75rem 0;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.account-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.account-email {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.account-name {
+  color: var(--text-tertiary);
+  font-size: 0.9rem;
+}
+
+/* ============================================================================
+   FOOTER
+   ============================================================================ */
+.modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding: 1.5rem 2rem;
+  border-top: 1px solid var(--border-light);
+  flex-shrink: 0;
+}
+
+.btn-primary,
+.btn-secondary,
+.btn-danger {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 2px solid var(--border-medium);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--border-light);
+}
+
+.btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(220, 38, 38, 0.3);
+}
+
+.btn-danger:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(220, 38, 38, 0.4);
+}
+
+.btn-danger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ============================================================================
+   ALERTS
+   ============================================================================ */
+.alert {
+  padding: 1rem 1.25rem;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+}
+
+.alert-error {
+  background: var(--error-bg, #fee2e2);
+  color: var(--error-text, #991b1b);
+  border: 1px solid var(--error-border, #ef4444);
+}
+
+.alert-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+/* ============================================================================
+   DELETE MODAL SPECIFIC
+   ============================================================================ */
+.delete-modal {
+  border: 2px solid var(--error-border, #ef4444);
+}
+
+/* ============================================================================
+   RESPONSIVE
+   ============================================================================ */
+@media (max-width: 640px) {
+  .modal-content {
+    max-height: 95vh;
+  }
+
+  .modal-header {
+    padding: 1.25rem 1.5rem;
+  }
+
+  .modal-title {
+    font-size: 1.25rem;
+  }
+
+  .modal-body {
+    padding: 1.5rem;
+  }
+
+  .modal-footer {
+    padding: 1.25rem 1.5rem;
+    flex-direction: column-reverse;
+  }
+
+  .btn-primary,
+  .btn-secondary,
+  .btn-danger {
+    width: 100%;
+  }
+
+  .warning-box {
+    flex-direction: column;
+  }
+}
+
+/* ============================================================================
+   DARK THEME
+   ============================================================================ */
+[data-theme="dark"] .warning-box {
+  background: var(--warning-bg);
+  border-color: var(--warning-border);
+}
+
+[data-theme="dark"] .alert-error {
+  background: var(--error-bg);
+  color: var(--error-text);
+}

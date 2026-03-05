@@ -1,0 +1,71 @@
+SECTION: EVALUATION FORM
+TOPIC: How to Submit an Evaluation, Input Fields, Requirements
+
+--- HOW TO START AN EVALUATION ---
+1. After logging in, you land on the Dashboard.
+2. The evaluation form is displayed by default.
+3. Fill in all required fields and click "Evaluate Trust Score."
+
+--- REQUIRED FIELDS ---
+
+1. RESUME FILE (Required)
+   • Click the upload area or drag-and-drop a file.
+   • Accepted formats: PDF (.pdf) and Word documents (.docx).
+   • Maximum file size: 10 MB.
+   • After uploading, you will see the file name and size.
+   • Click the X button to remove the file and upload a different one.
+   • If the file format is wrong: "Only PDF and DOCX files are allowed."
+   • If the file is too large: "File size exceeds 10MB limit."
+
+2. GITHUB PROFILE URL (Required)
+   • Enter the full URL to the freelancer's GitHub profile.
+   • Example: https://github.com/username
+   • The URL must start with http:// or https:// and contain github.com.
+
+3. LINKEDIN PROFILE URL (Required)
+   • Enter the full URL to the freelancer's LinkedIn profile.
+   • Example: https://linkedin.com/in/username
+   • The URL must start with http:// or https:// and contain linkedin.com.
+
+4. EXPERIENCE LEVEL (Required)
+   • Select from the dropdown:
+     - Entry Level (0–2 years)
+     - Mid Level (2–5 years)
+     - Senior Level (5–10 years)
+     - Expert Level (10+ years)
+   • This is compared against the resume and GitHub activity for consistency.
+
+--- OPTIONAL FIELDS ---
+
+5. PORTFOLIO WEBSITE (Optional)
+   • Enter the URL to the freelancer's portfolio or personal website.
+   • Example: https://yourportfolio.com
+   • If provided, it adds up to 5 extra points to the trust score.
+
+--- FORM PROGRESS ---
+• A progress bar at the top shows how many of the 4 required fields are completed (e.g., "2/4 required fields").
+
+--- WHAT HAPPENS AFTER CLICKING EVALUATE ---
+• The form switches to a loading view showing a 5-step pipeline:
+  Step 1: Uploading resume
+  Step 2: Analyzing language quality with AI
+  Step 3: Evaluating project patterns
+  Step 4: Validating GitHub and LinkedIn profiles
+  Step 5: Calculating final trust score
+• A timer shows elapsed time. Evaluation typically takes about 30 seconds.
+• If the connection fails, the system retries up to 3 times automatically.
+• After completion, you are taken to the Results page.
+
+--- COMMON ERRORS ---
+• "Unable to connect to the server" → The backend API may not be running. Make sure the server is started.
+• "Request timeout" → The evaluation took too long. Try again.
+• "Invalid input data" → One or more fields have invalid values. Check your URLs and file.
+• "Service temporarily unavailable" → The server is overloaded. Wait a moment and retry.
+
+--- "HOW IT WORKS" SIDE PANEL ---
+The form page shows an informational panel on the right:
+1. Upload Resume → AI analyzes language quality and content authenticity.
+2. Profile Verification → GitHub activity and LinkedIn presence are validated.
+3. Pattern Analysis → Neural network evaluates project patterns.
+4. Trust Score → Comprehensive trust score with explainable AI breakdown.
+Security note: "Your data is encrypted and secure. We only analyze data for trust scoring. Files are not stored permanently."

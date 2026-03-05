@@ -1,0 +1,61 @@
+SECTION: IMPROVEMENT SUGGESTIONS
+TOPIC: How to Improve Trust Score, Actionable Suggestions
+
+--- WHAT ARE IMPROVEMENT SUGGESTIONS? ---
+• After an evaluation, the system generates specific, actionable tips to improve the trust score.
+• Each suggestion tells you exactly what to do and how many points you could gain.
+• Some suggestions are enhanced by AI for more detailed advice.
+
+--- WHERE TO FIND SUGGESTIONS ---
+• On the Results page, look for the "Improvement Suggestions" section.
+• It appears when there are suggestions to show.
+• A trigger banner says: "We found X actionable suggestions that could improve the trust score by up to +Y points."
+• Click the banner or scroll down to see all suggestions.
+
+--- SUGGESTION SUMMARY ---
+At the top of the suggestions section, you see 3 stats:
+• Total number of suggestions
+• Total potential points gain (how many points the score could improve)
+• Possible new score (current score + potential gain, capped at 100)
+
+--- SUGGESTION CATEGORIES ---
+Suggestions are organized into 4 categories:
+
+1. LANGUAGE QUALITY
+   • Tips to improve resume writing, add action verbs, quantify achievements.
+   • Example: "Use more specific action verbs like 'developed', 'implemented', 'designed' instead of passive language."
+
+2. PROJECT PATTERNS
+   • Tips to improve project descriptions, fix timeline issues.
+   • Example: "Add specific project durations and avoid overlapping timelines."
+
+3. PROFILE LINKS
+   • Tips to improve GitHub, LinkedIn, and portfolio profiles.
+   • Example: "Increase GitHub activity by pushing commits regularly. Add more detailed repository descriptions."
+
+4. EXPERIENCE MATCH
+   • Tips to align claimed experience with resume content.
+   • Example: "Your resume mentions entry-level tasks but you selected Senior Level. Ensure consistency."
+
+--- EACH SUGGESTION CARD SHOWS ---
+• Category icon and title
+• "AI Enhanced" badge — if the suggestion was enhanced by AI for more detail
+• The original flag that triggered the suggestion
+• Impact badge — shows potential point gain (e.g., "+3 points")
+• Priority level — High, Medium, or Low (with color-coded icons)
+• Suggestion text — the main recommendation
+• Action steps — a checklist of specific steps to take (you can check them off as you complete them)
+• Examples — before/after comparisons showing what good vs. bad looks like
+
+--- CONTROLS ---
+• "Expand All" — opens all suggestion cards at once
+• "Collapse All" — closes all suggestion cards
+• Click any suggestion card to expand/collapse it individually
+
+--- TIPS FOR IMPROVING SCORES ---
+1. Language Quality: Use professional language, include specific metrics ("increased sales by 40%"), avoid generic phrases.
+2. Projects: Include realistic project descriptions with clear timelines, technologies used, and outcomes.
+3. GitHub: Keep your GitHub active — regular commits, well-documented repositories, meaningful README files.
+4. LinkedIn: Complete your LinkedIn profile — professional photo, detailed experience, skills, recommendations.
+5. Portfolio: Add a portfolio website showcasing your best work with descriptions and links.
+6. Experience: Make sure the experience level you select matches what your resume actually demonstrates.

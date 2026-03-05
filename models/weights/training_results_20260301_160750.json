@@ -1,0 +1,60 @@
+{
+  "timestamp": "20260301_160750",
+  "phase": "2 (Retrain.md v2.5)",
+  "label_encoding": "suspicious=1, trustworthy=0",
+  "smart_feature_expansion": true,
+  "model": {
+    "architecture": "FreelancerTrustLSTM",
+    "input_size": 768,
+    "hidden_sizes": [
+      256,
+      128,
+      64
+    ],
+    "dropout_rate": 0.4,
+    "num_layers": 3,
+    "total_parameters": 1297985,
+    "output": "Trust probability [0, 1]"
+  },
+  "config": {
+    "input_size": 768,
+    "hidden_sizes": [
+      256,
+      128,
+      64
+    ],
+    "dropout_rate": 0.4,
+    "epochs": 50,
+    "batch_size": 32,
+    "learning_rate": 0.0005,
+    "weight_decay": 0.0001,
+    "patience": 10,
+    "min_delta": 0.001,
+    "train_ratio": 0.7,
+    "val_ratio": 0.15,
+    "test_ratio": 0.15,
+    "use_class_weights": true,
+    "suspicious_weight": 1.2
+  },
+  "training": {
+    "epochs_run": 16,
+    "best_epoch": 6,
+    "best_val_loss": 0.0015811599732842296
+  },
+  "test": {
+    "accuracy": 1.0,
+    "suspicious_recall": 1.0,
+    "trustworthy_recall": 1.0,
+    "fpr": 0.0,
+    "fnr": 0.0,
+    "precision": 1.0,
+    "f1": 1.0,
+    "auc": 1.0,
+    "tp": 158,
+    "tn": 142,
+    "fp": 0,
+    "fn": 0,
+    "loss": 0.002915768610546365
+  },
+  "phase6_note": "lstm_inference.py must be updated after this retrain: trust_probability = 1 - model_output  (labels were flipped from v1.0)"
+}

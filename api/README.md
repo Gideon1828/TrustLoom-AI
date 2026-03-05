@@ -137,6 +137,68 @@ POST /upload-resume
 - **Documentation**: See [STEP_6_2_COMPLETE.md](STEP_6_2_COMPLETE.md)
 - **Tests**: Run `python test_upload_step_6_2.py`
 
+#### 5. Interview Question Generator (Module 26)
+
+```
+POST /generate-interview-questions
+```
+
+- **Purpose**: Generate targeted interview questions based on resume evaluation
+- **Status**: ✅ **FULLY IMPLEMENTED (Module 26)**
+- **Request Body**:
+  ```json
+  {
+    "file_id": "abc123def456",           // Option 1: Use uploaded file
+    "evaluation_data": {...},             // Option 2: Direct evaluation data
+    "role_context": "Senior Backend Developer",  // Optional
+    "target_count": 10,                   // 5-20 questions (default: 10)
+    "experience_level": "Senior"          // Junior|Mid|Senior
+  }
+  ```
+- **Input Modes**:
+  1. **file_id**: Use previously uploaded resume (auto-evaluates internally)
+  2. **evaluation_data**: Provide pre-computed evaluation results directly
+- **Question Categories**:
+  - **Technical**: Skill-specific depth questions
+  - **Project**: Deep-dive into claimed projects
+  - **Red Flag**: Address suspicious patterns or gaps
+  - **Behavioral**: Soft skills assessment
+- **Response**:
+  ```json
+  {
+    "success": true,
+    "total_questions": 10,
+    "questions": [
+      {
+        "question": "Explain your approach to API design...",
+        "category": "technical",
+        "reasoning": "Validate FastAPI expertise",
+        "difficulty": "senior",
+        "related_skill": "FastAPI",
+        "related_flag": null
+      }
+    ],
+    "categories": {
+      "technical": [...],
+      "project": [...],
+      "red_flag": [...],
+      "behavioral": [...]
+    },
+    "category_counts": {
+      "technical": 4,
+      "project": 2,
+      "red_flag": 1,
+      "behavioral": 3
+    },
+    "generation_metadata": {
+      "target_count": 10,
+      "role_context_provided": true,
+      "processing_time_ms": 150
+    },
+    "timestamp": "2026-03-03T12:00:00Z"
+  }
+  ```
+
 ---
 
 ## Request/Response Models
@@ -177,6 +239,33 @@ All endpoints use **Pydantic** models for automatic validation:
 - text_extracted: str (preview)
 - text_length: int
 - upload_timestamp: str
+
+**InterviewQuestionRequest** (Module 26)
+
+- file_id: Optional[str] (previously uploaded file)
+- evaluation_data: Optional[dict] (direct evaluation results)
+- role_context: Optional[str] (job description)
+- target_count: int (5-20, default 10)
+- experience_level: str (Junior|Mid|Senior)
+
+**InterviewQuestionResponse** (Module 26)
+
+- success: bool
+- total_questions: int
+- questions: List[InterviewQuestionModel]
+- categories: Dict[str, List]
+- category_counts: Dict[str, int]
+- generation_metadata: dict
+- timestamp: str
+
+**InterviewQuestionModel** (Module 26)
+
+- question: str
+- category: str (technical|project|red_flag|behavioral)
+- reasoning: str
+- difficulty: str (junior|mid|senior)
+- related_skill: Optional[str]
+- related_flag: Optional[str]
 
 **ErrorResponse**
 

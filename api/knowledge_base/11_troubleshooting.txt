@@ -1,0 +1,106 @@
+SECTION: TROUBLESHOOTING
+TOPIC: Common Issues, Error Messages, How to Fix Problems
+
+--- CONNECTION ISSUES ---
+
+PROBLEM: "Unable to connect to the server"
+CAUSE: The backend API server is not running.
+FIX: Make sure the backend server is started. If you are running locally, start the backend with the appropriate command (e.g., run `start-backend.ps1`). If the problem persists, check your network connection.
+
+PROBLEM: "Request timeout. The evaluation took too long."
+CAUSE: The evaluation processing exceeded the time limit (60 seconds).
+FIX: Try again — the server may have been under heavy load. If it keeps happening, check that all URLs (GitHub, LinkedIn) are accessible.
+
+PROBLEM: "CORS error" or blocked requests in the browser console
+CAUSE: The frontend and backend are not configured to communicate.
+FIX: Make sure the backend CORS settings allow your frontend URL (e.g., http://localhost:3000).
+
+--- EVALUATION ERRORS ---
+
+PROBLEM: "Invalid input data" (HTTP 400)
+CAUSE: One or more form fields have invalid values.
+FIX: Check that:
+  • The resume file is a PDF or DOCX under 10 MB.
+  • The GitHub URL contains "github.com."
+  • The LinkedIn URL contains "linkedin.com."
+  • An experience level is selected.
+  • If portfolio URL is provided, it starts with http:// or https://.
+
+PROBLEM: "Validation error" (HTTP 422)
+CAUSE: The data format is incorrect.
+FIX: Ensure all required fields are filled in correctly. Clear the form and try again.
+
+PROBLEM: "Server error" (HTTP 500)
+CAUSE: An unexpected error occurred on the server.
+FIX: Try again. If the problem persists, use Report an Issue from the user menu.
+
+PROBLEM: "Service temporarily unavailable" (HTTP 503)
+CAUSE: The server is temporarily overloaded or a required service is down.
+FIX: Wait a few minutes and try again.
+
+--- AUTHENTICATION ISSUES ---
+
+PROBLEM: "Invalid login credentials"
+CAUSE: Wrong email or password.
+FIX: Double-check your email and password. Use "Forgot password?" if needed.
+
+PROBLEM: "Too many login attempts"
+CAUSE: Rate limiting triggered by too many failed logins.
+FIX: Wait a few minutes before trying again.
+
+PROBLEM: "Your session has expired"
+CAUSE: The login session timed out.
+FIX: Sign in again. This is normal for security.
+
+PROBLEM: Google/GitHub login not working
+CAUSE: OAuth configuration issue or popup blocked.
+FIX: Allow popups in your browser for this site. Try again. If the problem persists, use email/password login instead.
+
+PROBLEM: "Please check your email to confirm your account"
+CAUSE: Email confirmation is required after registration.
+FIX: Check your inbox (and spam folder) for a confirmation email. Click the confirmation link, then try logging in.
+
+--- FILE UPLOAD ISSUES ---
+
+PROBLEM: "Only PDF and DOCX files are allowed"
+CAUSE: You tried to upload a file in a different format.
+FIX: Convert your file to PDF or DOCX format first.
+
+PROBLEM: "File size exceeds 10MB limit"
+CAUSE: The file is too large.
+FIX: Compress the file or remove embedded images to reduce size.
+
+PROBLEM: Resume upload seems stuck
+CAUSE: Large file or slow connection.
+FIX: Wait for the progress bar to complete. If stuck for over 30 seconds, cancel and try with a smaller file.
+
+--- PROFILE ISSUES ---
+
+PROBLEM: Can't change email address
+CAUSE: By design, email cannot be changed.
+FIX: Email is tied to your account identity and cannot be modified.
+
+PROBLEM: Profile picture won't upload
+CAUSE: File format or size issue.
+FIX: Use JPG, PNG, or GIF format. Max size is 5 MB.
+
+PROBLEM: Password change fails
+CAUSE: Current password is incorrect, or new password doesn't meet requirements.
+FIX: Enter the correct current password. New password must be at least 8 characters with uppercase, lowercase, and a number.
+
+--- CHATBOT ISSUES ---
+
+PROBLEM: Chatbot says "All AI models are temporarily busy"
+CAUSE: Free-tier AI models are rate-limited globally.
+FIX: Wait 1–2 minutes and try again. This is a temporary issue.
+
+PROBLEM: Chatbot gives inaccurate or vague answers
+CAUSE: AI limitations or ambiguous question.
+FIX: Try rephrasing your question with more specific details. If the chatbot can't help, use Report an Issue.
+
+--- STILL HAVING ISSUES? ---
+If none of the above fixes your problem:
+1. Click your profile menu (avatar in top-right corner).
+2. Click "Report an Issue."
+3. Describe what happened, what you expected, and any error messages.
+4. The development team will look into it.

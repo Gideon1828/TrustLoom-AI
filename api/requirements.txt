@@ -22,6 +22,9 @@ requests==2.31.0
 python-multipart==0.0.6
 aiofiles==23.2.1
 
+# Image Upload & Storage
+cloudinary==1.41.0
+
 # Resume Parsing (will be used in Step 6.2)
 PyPDF2==3.0.1
 pdfplumber==0.10.3
@@ -33,6 +36,9 @@ python-json-logger==2.0.7
 # Security & CORS
 python-jose[cryptography]==3.3.0
 
+# Authentication (Supabase)
+supabase==2.4.0
+
 # Environment Variables
 python-dotenv==1.0.0
 
@@ -43,6 +49,13 @@ typing-extensions==4.9.0
 pytest==7.4.4
 pytest-asyncio==0.23.3
 httpx==0.26.0
+
+# LLM Integration (for intelligent extraction)
+google-generativeai==0.8.3
+
+# PDF Annotation (for heatmap visualization)
+pymupdf==1.24.2
+reportlab==4.1.0
 
 # Note: ML dependencies (torch, transformers) are already installed
 # from previous phases and don't need to be duplicated here

@@ -1,0 +1,1008 @@
+/**
+ * ComparisonModal.css - Module 24: Multi-Resume Comparison
+ * 
+ * Styles for the multi-step comparison modal component.
+ */
+
+/* ============================================================================
+   MODAL OVERLAY & CONTAINER
+   ============================================================================ */
+
+.comparison-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+  padding: 20px;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.comparison-modal-content {
+  background: linear-gradient(135deg, #1a1f2e 0%, #0f1218 100%);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow: hidden;
+  box-shadow:
+    0 25px 80px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
+  animation: slideUp 0.3s ease-out;
+  display: flex;
+  flex-direction: column;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ============================================================================
+   MODAL HEADER
+   ============================================================================ */
+
+.comparison-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.comparison-modal-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.comparison-modal-icon {
+  font-size: 1.5rem;
+}
+
+.comparison-modal-close {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 1.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.comparison-modal-close:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
+/* ============================================================================
+   STEP INDICATOR
+   ============================================================================ */
+
+.comparison-steps-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  padding: 20px 24px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.step-dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.step-dot .step-number {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.step-dot.active {
+  background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+  border-color: transparent;
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
+}
+
+.step-dot.active .step-number {
+  color: #ffffff;
+}
+
+.step-dot.completed {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border-color: transparent;
+}
+
+.step-dot.completed .step-number {
+  color: #ffffff;
+}
+
+.step-line {
+  width: 60px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.step-line.completed {
+  background: linear-gradient(90deg, #10b981 0%, #3b82f6 100%);
+}
+
+/* ============================================================================
+   MODAL BODY
+   ============================================================================ */
+
+.comparison-modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+.comparison-step {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.step-title {
+  margin: 0 0 8px 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #ffffff;
+  text-align: center;
+}
+
+.step-description {
+  margin: 0 0 24px 0;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.6);
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* ============================================================================
+   STEP 1: COUNT SELECTION
+   ============================================================================ */
+
+.count-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.count-option {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 2px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.count-option:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.count-option.selected {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: #3b82f6;
+}
+
+.count-option-icon {
+  font-size: 1.75rem;
+}
+
+.count-option-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.count-option-title {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #ffffff;
+}
+
+.count-option-desc {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.count-option-check {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: transparent;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.count-option.selected .count-option-check {
+  background: #3b82f6;
+  border-color: #3b82f6;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.comparison-info-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 10px;
+}
+
+.comparison-info-box .info-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.comparison-info-box .info-text {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.5;
+}
+
+/* ============================================================================
+   STEP 2: FILE UPLOAD
+   ============================================================================ */
+
+.upload-zones {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.upload-zone-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.upload-zone-label-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.upload-zone-number {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #3b82f6;
+  min-width: 100px;
+}
+
+.upload-zone-label-input {
+  flex: 1;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 0.875rem;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.upload-zone-label-input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.upload-zone-label-input:focus {
+  border-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.upload-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 32px 20px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 2px dashed rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 120px;
+}
+
+.upload-zone:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(59, 130, 246, 0.5);
+}
+
+.upload-zone.uploading {
+  border-color: #3b82f6;
+  cursor: default;
+}
+
+.upload-zone.error {
+  border-color: #ef4444;
+}
+
+.upload-zone-icon {
+  font-size: 2rem;
+  opacity: 0.6;
+}
+
+.upload-zone-text {
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 500;
+}
+
+.upload-zone-hint {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* Upload Progress */
+.upload-progress {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.upload-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgba(59, 130, 246, 0.2);
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.upload-progress-text {
+  font-size: 0.9rem;
+  color: #3b82f6;
+}
+
+.upload-progress-bar {
+  width: 100%;
+  max-width: 200px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.upload-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6 0%, #6366f1 100%);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+/* Upload Error */
+.upload-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: 8px;
+  margin-top: 8px;
+}
+
+.upload-error .error-icon {
+  font-size: 1rem;
+}
+
+.upload-error .error-text {
+  font-size: 0.85rem;
+  color: #ef4444;
+}
+
+/* Upload Success */
+.upload-success {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: rgba(16, 185, 129, 0.1);
+  border: 2px solid rgba(16, 185, 129, 0.3);
+  border-radius: 12px;
+}
+
+.upload-success-icon {
+  font-size: 1.5rem;
+}
+
+.upload-success-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.upload-success-name {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #ffffff;
+  word-break: break-all;
+}
+
+.upload-success-status {
+  font-size: 0.8rem;
+  color: #10b981;
+}
+
+.upload-remove-btn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 6px;
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.upload-remove-btn:hover {
+  background: rgba(239, 68, 68, 0.3);
+}
+
+/* ============================================================================
+   STEP 3: PROCESSING
+   ============================================================================ */
+
+.processing-step {
+  text-align: center;
+  padding: 20px 0;
+}
+
+.processing-animation {
+  display: flex;
+  justify-content: center;
+  margin: 30px 0;
+}
+
+.processing-spinner {
+  position: relative;
+  width: 80px;
+  height: 80px;
+}
+
+.spinner-ring {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 3px solid transparent;
+}
+
+.spinner-ring:nth-child(1) {
+  border-top-color: #3b82f6;
+  animation: spin 1.5s linear infinite;
+}
+
+.spinner-ring:nth-child(2) {
+  border-right-color: #8b5cf6;
+  animation: spin 2s linear infinite reverse;
+}
+
+.spinner-ring:nth-child(3) {
+  border-bottom-color: #10b981;
+  animation: spin 1s linear infinite;
+}
+
+.processing-status {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 20px 0;
+}
+
+.processing-progress-bar {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.processing-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6 0%, #10b981 100%);
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+.processing-time {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  margin-bottom: 20px;
+}
+
+.processing-time span {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.time-elapsed {
+  color: rgba(255, 255, 255, 0.7) !important;
+  font-weight: 500;
+}
+
+.processing-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 20px;
+  background: rgba(139, 92, 246, 0.1);
+  border-radius: 10px;
+}
+
+.processing-info .info-icon {
+  font-size: 1.25rem;
+}
+
+.processing-info .info-text {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* ============================================================================
+   ERROR STATE
+   ============================================================================ */
+
+.error-step {
+  text-align: center;
+  padding: 20px 0;
+}
+
+.error-icon-large {
+  font-size: 3rem;
+  margin-bottom: 16px;
+}
+
+.error-step .step-title {
+  color: #ef4444;
+}
+
+.error-message {
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 16px 0 24px;
+  padding: 16px;
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: 10px;
+  line-height: 1.5;
+}
+
+.error-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.retry-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+  border: none;
+  border-radius: 10px;
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.retry-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.35);
+}
+
+.error-actions .cancel-btn {
+  padding: 12px 24px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.error-actions .cancel-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* ============================================================================
+   MODAL FOOTER
+   ============================================================================ */
+
+.comparison-modal-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.modal-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.modal-btn.cancel-btn,
+.modal-btn.back-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.modal-btn.cancel-btn:hover,
+.modal-btn.back-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+.modal-btn.continue-btn {
+  background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+  color: #ffffff;
+  margin-left: auto;
+}
+
+.modal-btn.continue-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.35);
+}
+
+.modal-btn.compare-btn {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #ffffff;
+  margin-left: auto;
+}
+
+.modal-btn.compare-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.35);
+}
+
+.modal-btn.compare-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-arrow {
+  font-size: 1.1rem;
+}
+
+.btn-icon {
+  font-size: 1.1rem;
+}
+
+/* ============================================================================
+   RESPONSIVE DESIGN
+   ============================================================================ */
+
+@media (max-width: 640px) {
+  .comparison-modal-content {
+    max-height: 95vh;
+    border-radius: 12px;
+  }
+
+  .comparison-modal-header {
+    padding: 16px 20px;
+  }
+
+  .comparison-modal-body {
+    padding: 20px;
+  }
+
+  .comparison-modal-footer {
+    padding: 16px 20px;
+    flex-wrap: wrap;
+  }
+
+  .count-option {
+    padding: 14px 16px;
+  }
+
+  .count-option-icon {
+    font-size: 1.5rem;
+  }
+
+  .upload-zone {
+    padding: 24px 16px;
+  }
+
+  .modal-btn {
+    padding: 10px 18px;
+    font-size: 0.9rem;
+  }
+
+  .processing-spinner {
+    width: 60px;
+    height: 60px;
+  }
+
+  .step-line {
+    width: 40px;
+  }
+}
+
+/* ============================================================================
+   "WHAT GETS COMPARED?" INFO PANEL (Step 7.3: UX Polish)
+   ============================================================================ */
+
+.what-gets-compared {
+  margin-top: 12px;
+}
+
+.info-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 8px;
+  color: #60a5fa;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+  text-align: left;
+}
+
+.info-toggle-btn:hover {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.5);
+}
+
+.info-toggle-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+}
+
+.toggle-icon {
+  font-size: 0.75rem;
+  transition: transform 0.2s ease;
+}
+
+.info-panel {
+  margin-top: 12px;
+  padding: 16px;
+  background: rgba(59, 130, 246, 0.05);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 10px;
+  animation: expandPanel 0.3s ease-out;
+}
+
+@keyframes expandPanel {
+  from {
+    opacity: 0;
+    max-height: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    max-height: 500px;
+    transform: translateY(0);
+  }
+}
+
+.info-panel-content {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.info-panel-title {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.info-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.info-list li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  gap: 2px 12px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.score-label {
+  grid-column: 1;
+  grid-row: 1;
+  font-weight: 500;
+  color: #e2e8f0;
+  font-size: 0.9rem;
+}
+
+.score-range {
+  grid-column: 2;
+  grid-row: 1;
+  color: #10b981;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.score-desc {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  color: #94a3b8;
+  font-size: 0.8rem;
+}
+
+.info-list.not-compared li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
+.info-list.not-compared li::before {
+  content: "✕";
+  color: #ef4444;
+  font-size: 0.75rem;
+}
+
+.info-note {
+  margin: 0;
+  padding: 12px;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: #fbbf24;
+  line-height: 1.5;
+}
+
+.info-note strong {
+  color: #fcd34d;
+}
+
+/* ============================================================================
+   KEYBOARD NAVIGATION HINTS
+   ============================================================================ */
+
+.keyboard-hints {
+  display: flex;
+  gap: 16px;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.keyboard-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-family: ui-monospace, monospace;
+  color: #94a3b8;
+  min-width: 20px;
+}
+
+/* Mobile responsiveness for info panel */
+@media (max-width: 640px) {
+  .info-panel {
+    padding: 12px;
+  }
+
+  .info-list li {
+    padding: 8px 10px;
+  }
+
+  .score-label {
+    font-size: 0.85rem;
+  }
+
+  .score-range {
+    font-size: 0.8rem;
+  }
+
+  .score-desc {
+    font-size: 0.75rem;
+  }
+}

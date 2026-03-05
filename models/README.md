@@ -219,3 +219,81 @@ All requirements implemented:
 - [x] Load pre-trained BERT model
 - [x] Configure tokenizer
 - [x] Set max sequence length
+
+---
+
+## 💡 Suggestion Engine (Module 22)
+
+### Overview
+
+The **Suggestion Engine** (`suggestion_engine.py`) transforms negative flags from BERT, LSTM, and Heuristic scorers into positive, actionable improvement suggestions with estimated score impact.
+
+### Architecture
+
+```
+Flags → Mapper → Templates → [LLM Enhancement] → Prioritization → Output
+                     ↓
+              SUGGESTION_TEMPLATES (25+ templates)
+```
+
+### Key Components
+
+| Component | Description |
+|-----------|-------------|
+| `ScoreImpact` | Constants for potential points recoverable per fix |
+| `SuggestionCategory` | Enum: LANGUAGE_QUALITY, PROJECT_PATTERNS, PROFILE_LINKS, EXPERIENCE_MATCH |
+| `SUGGESTION_TEMPLATES` | 25+ pre-built templates for all flag types |
+| `SuggestionEngine` | Main class for generating suggestions |
+
+### Usage
+
+```python
+from models.suggestion_engine import get_suggestion_engine
+
+# Get singleton instance
+engine = get_suggestion_engine()
+
+# Generate suggestions from flags
+result = engine.generate_suggestions(
+    all_flags=[
+        {'category': 'Language Clarity', 'message': 'Weak verbs', 'source': 'BERT', 'severity': 'medium'}
+    ],
+    score_data={'final_score': 72.0},
+    use_llm=False  # True to use Gemini AI
+)
+
+print(result['total_potential_gain'])  # e.g., 12
+print(len(result['suggestions']))       # e.g., 3
+```
+
+### Flag-to-Suggestion Mapping
+
+| Flag Source | Template Categories |
+|-------------|---------------------|
+| BERT | `language_clarity`, `terminology_consistency`, `vague_description` |
+| LSTM | `overlap_detected`, `suspicious_patterns`, `timeline_issues` |
+| Heuristic | `github_missing/invalid`, `linkedin_missing/invalid`, `portfolio_missing` |
+| Experience | `experience_mismatch`, `experience_invalid_level` |
+
+### Configuration
+
+Optional Gemini API integration for personalized suggestions:
+
+```env
+GEMINI_API_KEY=your_api_key
+SUGGESTION_ENGINE_USE_LLM=true
+GEMINI_MODEL=gemini-1.5-flash
+```
+
+### Status
+
+✅ **MODULE 22 COMPLETE**
+
+- [x] Phase 1: Base module structure
+- [x] Phase 2: Flag mappers (6 mappers + deduplication)
+- [x] Phase 3: Gemini LLM integration
+- [x] Phase 4: Main generation methods
+- [x] Phase 5: API integration
+- [x] Phase 6: Frontend integration
+- [x] Phase 7: Testing (64 unit tests)
+- [x] Phase 8: Documentation

@@ -1,0 +1,36 @@
+SECTION: APPLICATION OVERVIEW
+TOPIC: What is TrustLoom AI
+
+TrustLoom AI (branded as "Freelancer Trust Evaluation System") is an AI-powered web application that evaluates freelancer trustworthiness. It analyzes resumes, GitHub profiles, LinkedIn profiles, and portfolio websites to produce a Trust Score from 0 to 100 with explainable AI breakdowns.
+
+PURPOSE:
+• Help recruiters, hiring managers, and businesses assess freelancer credibility before hiring.
+• Detect potential red flags such as fake projects, inflated experience, suspicious patterns, or missing professional footprint.
+• Provide actionable improvement suggestions so freelancers can strengthen their profiles.
+
+WHAT IT DOES NOT DO:
+• It does not guarantee accuracy — it provides an AI-assisted estimate.
+• It does not store resumes permanently — files are used only for analysis.
+• It does not make hiring decisions — it gives data to help humans decide.
+
+KEY FEATURES:
+1. Resume upload and analysis (PDF or DOCX, up to 10 MB)
+2. GitHub profile validation
+3. LinkedIn profile validation
+4. Optional portfolio website validation
+5. Trust Score (0–100) with risk level (LOW, MEDIUM, HIGH)
+6. Score breakdown by component (Language Quality, Project Realism, Profile Validation)
+7. Explainable AI (XAI) — detailed explanations for each score component
+8. Observations and flags — important findings highlighted
+9. Improvement suggestions — actionable tips with estimated point gains
+10. PDF report download
+11. Candidate comparison (compare 2 or 3 resumes side-by-side)
+12. AI-generated interview questions tailored to the candidate
+13. Evaluation history (saved and searchable)
+14. Dark/Light mode
+15. Profile settings (avatar, name, organization, password)
+16. AI Helper Chatbot for support
+
+TECHNOLOGY (simplified for users):
+• The system uses advanced AI models — including language analysis and pattern recognition — to evaluate trust indicators.
+• All data is encrypted and processed securely.

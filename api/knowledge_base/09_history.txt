@@ -1,0 +1,57 @@
+SECTION: EVALUATION HISTORY
+TOPIC: Saved Evaluations, History Sidebar, Loading Past Results
+
+--- WHAT IS EVALUATION HISTORY? ---
+• Every evaluation you complete is automatically saved.
+• You can access past evaluations from the History sidebar on the left side of the dashboard.
+• History is only available when you are signed in.
+
+--- HOW TO OPEN THE HISTORY SIDEBAR ---
+1. On the Dashboard, look for the hamburger menu icon (☰) in the top-left corner.
+2. Click it to open the sidebar.
+3. Click the X button or click outside the sidebar to close it.
+
+--- HOW EVALUATIONS ARE ORGANIZED ---
+Evaluations are grouped by time:
+• Today
+• Yesterday
+• Previous 7 Days
+• Previous 30 Days
+• Older
+
+Each group can be collapsed or expanded by clicking the arrow (▼).
+
+--- WHAT EACH EVALUATION ITEM SHOWS ---
+• A type icon:
+  - 📄 — Standard evaluation
+  - ⚖️ — Comparison evaluation
+  - ❓ — Interview questions session
+• Title text (usually the resume file name or a custom name)
+• Score badge showing the percentage
+
+--- ACTIONS ON EACH EVALUATION ---
+Click the three-dot menu (⋯) on any evaluation to see:
+• ✏️ Rename — Change the title of the evaluation. An inline text input appears; press Enter to save or Escape to cancel.
+• 🗑️ Delete — Remove the evaluation. A confirmation dialog appears asking "Are you sure?" before deletion.
+
+--- LOADING A PAST EVALUATION ---
+• Click on any evaluation in the sidebar to load its results.
+• The Results page will display the saved data.
+
+--- PAGINATION ---
+• The sidebar loads 20 evaluations at a time.
+• If you have more, a "Load More" button appears at the bottom.
+
+--- STARTING A NEW EVALUATION ---
+• Click the "+ New Evaluation" button at the top of the sidebar.
+• This takes you back to the input form.
+
+--- SIDEBAR FOOTER ---
+• Shows your avatar (initials), name, and email.
+• Sign-out button (🚪) at the bottom.
+
+--- NOT SIGNED IN ---
+• If you're not signed in, the sidebar shows: "Sign in to save and view your evaluation history" with a "Sign In" link.
+
+--- EMPTY STATE ---
+• If you have no saved evaluations: "No evaluations yet. Upload a resume to get started!"

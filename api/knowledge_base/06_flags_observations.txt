@@ -1,0 +1,44 @@
+SECTION: OBSERVATIONS AND FLAGS
+TOPIC: Flags, Warnings, Observations About the Evaluation
+
+--- WHAT ARE FLAGS? ---
+• Flags are important findings or concerns detected during the evaluation.
+• They appear in the "Observations & Flags" section on the Results page.
+• Not every evaluation has flags — the section only appears when flags are found.
+
+--- FLAG TYPES ---
+Flags are color-coded by severity:
+• 🟢 SUCCESS (Green) — Positive finding. Something good was detected.
+• 🔵 INFO (Blue) — Informational note. Worth knowing but not a concern.
+• 🟡 WARNING (Yellow) — Potential concern. Should be reviewed but isn't necessarily bad.
+• 🔴 ERROR (Red) — Significant concern. May indicate a serious issue.
+
+--- WHAT FLAGS CAN DETECT ---
+Examples of common flags:
+• Resume contains minimal project details
+• Project timelines show overlaps (working on multiple projects simultaneously)
+• Project durations seem unrealistic (too short or too long)
+• GitHub profile has very few repositories
+• GitHub profile has no recent activity
+• LinkedIn profile is incomplete or inaccessible
+• Experience level claimed doesn't match resume content
+• Resume uses generic or templated language
+• Portfolio website is not accessible or has no relevant content
+• Resume language quality is below average
+
+--- FLAG SOURCE ---
+Each flag shows which analysis component generated it:
+• BERT — from language quality analysis
+• LSTM — from project pattern analysis
+• Heuristic — from profile validation (GitHub, LinkedIn, Portfolio, Experience)
+
+--- HOW TO READ FLAGS ---
+• The section header shows the total count of flags (e.g., "Observations & Flags (5)").
+• Each flag has an icon, the message text, and a source label.
+• Read all flags to understand what the system found.
+• Yellow and red flags are the most important to review.
+• Green flags indicate strengths — no action needed.
+
+--- RELATIONSHIP TO SUGGESTIONS ---
+• Many flags have corresponding improvement suggestions.
+• Check the "Improvement Suggestions" section for actionable steps to address each flag.

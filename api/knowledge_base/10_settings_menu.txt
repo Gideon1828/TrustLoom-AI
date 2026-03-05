@@ -1,0 +1,70 @@
+SECTION: USER MENU AND SETTINGS
+TOPIC: User Menu Options, Profile Settings, Dark Mode, Report an Issue
+
+--- USER MENU ---
+• Located in the top-right corner of the header.
+• Click your avatar (profile picture or initials) to open the dropdown menu.
+
+MENU OPTIONS:
+1. Your name and email (displayed at the top, not clickable)
+2. Profile Settings — Opens the profile settings page
+3. Dark/Light Mode — Toggle switch to change the theme
+4. Report an Issue — Opens a dialog to submit a bug report or feedback
+5. Terms of Service — Opens the Terms of Service page in a new tab
+6. Privacy Policy — Opens the Privacy Policy page in a new tab
+7. Delete Account — Permanently deletes your account (RED, at the bottom)
+8. Sign Out — Signs you out and returns to the login page
+
+--- PROFILE SETTINGS PAGE ---
+Accessible via User Menu → Profile Settings, or directly at /profile-settings.
+
+Has 3 tabs:
+
+TAB 1: PROFILE
+• Profile Picture:
+  - Shows your current avatar (or initials if none set).
+  - "Upload Photo" button to upload a new picture (JPG, PNG, or GIF, max 5 MB).
+  - If you logged in with Google/GitHub, you can click "Use [Provider] photo" to use your social account picture.
+  - The image is automatically cropped to 400x400 pixels with face detection.
+• Full Name: Your display name (required).
+• Email Address: Shown but cannot be changed (read-only).
+• Organization: Optional field for your company or org name.
+• "Save Changes" button to save profile updates.
+
+TAB 2: PASSWORD
+For regular (email/password) accounts:
+  • Current Password (required for verification)
+  • New Password (min 8 chars, uppercase + lowercase + number)
+  • Confirm New Password (must match)
+  • Password visibility toggle buttons (show/hide)
+
+For OAuth (Google/GitHub) accounts:
+  • Title changes to "Add Password"
+  • No "Current Password" field needed
+  • Info box explains: "Add a password to your account. This will allow you to sign in with email and password in addition to [your OAuth provider]."
+  • After adding a password, you can log in with either method.
+
+TAB 3: EMAIL PREFERENCES
+4 toggle switches:
+  • Evaluation Alerts — Notify when evaluations complete (default: ON)
+  • Security Alerts — Security and login notifications (default: ON)
+  • Product Updates — New features and improvements (default: OFF)
+  • Marketing Emails — Tips, newsletters, case studies (default: OFF)
+  • "Save Preferences" button
+
+"← Back to Dashboard" link at the top to return to the main page.
+
+--- DARK / LIGHT MODE ---
+• Toggle from the User Menu using the theme switch.
+• Also available on auth pages (login, register) via a sun/moon icon button.
+• Your preference is saved and persists across sessions.
+• Dark mode changes all colors to dark backgrounds with light text.
+• Light mode uses white/light gray backgrounds with dark text.
+
+--- REPORT AN ISSUE ---
+• Click "Report an Issue" in the User Menu.
+• A dialog opens where you can describe the problem.
+• Choose the type: Bug Report, Feature Request, Improvement, or Question.
+• Provide details about what happened.
+• The report is sent to the development team.
+• For urgent issues, you can also email the support team directly.

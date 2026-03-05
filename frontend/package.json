@@ -1,0 +1,48 @@
+{
+  "name": "freelancer-trust-evaluation-frontend",
+  "version": "1.0.0",
+  "description": "Frontend for Freelancer Trust Evaluation System",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@react-pdf-viewer/core": "^3.12.0",
+    "@react-pdf-viewer/default-layout": "^3.12.0",
+    "axios": "^1.6.0",
+    "chart.js": "^4.5.1",
+    "jspdf": "^4.0.0",
+    "jspdf-autotable": "^5.0.7",
+    "lucide-react": "^0.577.0",
+    "pdfjs-dist": "^3.4.120",
+    "react": "^18.2.0",
+    "react-chartjs-2": "^5.3.1",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^7.13.1"
+  },
+  "scripts": {
+    "dev": "vite",
+    "start": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.2.1",
+    "vite": "^5.0.11"
+  }
+}

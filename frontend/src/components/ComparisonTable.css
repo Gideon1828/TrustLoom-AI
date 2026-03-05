@@ -1,0 +1,1178 @@
+/**
+ * ComparisonTable.css — Module 24: Multi-Resume Comparison
+ * TrustLoom AI — Production-Level Styling
+ *
+ * Dark-themed comparison table with visual enhancements,
+ * animations, responsive card layout, and print support.
+ */
+
+/* ============================================================================
+   TABLE WRAPPER
+   ============================================================================ */
+
+.comparison-table-wrapper {
+  animation: cmpFadeIn 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+@keyframes cmpFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================================================
+   SUMMARY BANNER
+   ============================================================================ */
+
+.comparison-summary-banner {
+  background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%);
+  border-radius: 18px;
+  padding: 1.75rem 2rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 12px 48px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Subtle gradient accent on top */
+.comparison-summary-banner::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #10b981, #34d399, #6ee7b7);
+}
+
+.summary-winner-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.trophy-icon {
+  font-size: 2.75rem;
+  line-height: 1;
+  animation: cmpBounce 2s ease-in-out infinite;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
+}
+
+@keyframes cmpBounce {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-6px) scale(1.04);
+  }
+}
+
+.winner-info {
+  flex: 1;
+  min-width: 180px;
+}
+
+.winner-title {
+  margin: 0;
+  font-size: 1.65rem;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.5px;
+  line-height: 1.2;
+}
+
+.winner-subtitle {
+  margin: 4px 0 0;
+  font-size: 0.88rem;
+  color: rgba(255, 255, 255, 0.55);
+  font-weight: 400;
+}
+
+/* Score badge */
+.winner-score-badge {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  padding: 0.7rem 1.25rem;
+  border-radius: 14px;
+  box-shadow:
+    0 6px 20px rgba(16, 185, 129, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  flex-shrink: 0;
+}
+
+.comparison-table-wrapper .winner-score-badge .score-value {
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: #ffffff !important;
+  line-height: 1;
+  position: static !important;
+  top: auto !important;
+  left: auto !important;
+  transform: none !important;
+}
+
+.comparison-table-wrapper .winner-score-badge .score-max {
+  font-size: 1rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.65) !important;
+  position: static !important;
+}
+
+/* Score difference pill */
+.score-difference-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
+  margin-bottom: 1rem;
+}
+
+.diff-icon {
+  font-size: 1rem;
+}
+
+.diff-text {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #34d399;
+}
+
+/* Summary text */
+.summary-text {
+  margin: 0 0 1rem;
+  font-size: 0.92rem;
+  line-height: 1.65;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+/* Meta bar */
+.summary-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 500;
+}
+
+.meta-icon {
+  font-size: 0.92rem;
+}
+
+/* ============================================================================
+   COMPARISON TABLE
+   ============================================================================ */
+
+.comparison-table-container {
+  background: linear-gradient(180deg, #161b28 0%, #0f1218 100%);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow:
+    0 10px 40px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  margin-bottom: 1.5rem;
+  overflow-x: auto;
+}
+
+.comparison-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 600px;
+  table-layout: fixed;
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────── */
+
+.comparison-table thead tr {
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.metric-header {
+  padding: 1rem 1.25rem;
+  text-align: left;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  width: 200px;
+}
+
+.candidate-header {
+  padding: 1.1rem 1rem;
+  text-align: center;
+  font-weight: 600;
+  color: #ffffff;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  position: relative;
+}
+
+.candidate-header.winner-header {
+  background: rgba(16, 185, 129, 0.08);
+}
+
+.candidate-header.winner-header::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #10b981, #34d399, #6ee7b7);
+}
+
+.candidate-header-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.crown-icon {
+  font-size: 1.15rem;
+  animation: cmpBounce 2s ease-in-out infinite;
+  line-height: 1;
+}
+
+.candidate-name {
+  font-size: 0.92rem;
+  font-weight: 700;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #f1f5f9;
+  line-height: 1.3;
+}
+
+.candidate-rank {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.4);
+  padding: 0.15rem 0.5rem;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+}
+
+/* ── Body Cells ─────────────────────────────────────────────────────────── */
+
+.metric-cell {
+  padding: 0.9rem 1.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.metric-cell .metric-icon {
+  margin-right: 0.6rem;
+  font-size: 1.05rem;
+  vertical-align: middle;
+}
+
+.metric-cell .metric-name {
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: #ffffff;
+  vertical-align: middle;
+}
+
+.metric-cell .metric-scale {
+  display: block;
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.35);
+  margin-top: 0.15rem;
+  margin-left: 1.7rem;
+  font-weight: 400;
+}
+
+.metric-cell.clickable {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  user-select: none;
+}
+
+.metric-cell.clickable:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.expand-icon {
+  margin-left: 0.5rem;
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.35);
+  transition: transform 0.2s ease;
+  vertical-align: middle;
+}
+
+/* ── Score Cells ────────────────────────────────────────────────────────── */
+
+.score-cell,
+.info-cell,
+.detail-cell {
+  padding: 0.9rem 1.25rem;
+  text-align: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  vertical-align: middle;
+  transition: background-color 0.2s ease;
+}
+
+.score-cell.winner-cell,
+.info-cell.winner-cell,
+.detail-cell.winner-cell {
+  background: rgba(16, 185, 129, 0.04);
+  border-left: 3px solid rgba(16, 185, 129, 0.25);
+}
+
+.comparison-table-wrapper .score-cell.best-score .score-value {
+  color: #34d399 !important;
+  font-weight: 800;
+}
+
+/* ── GLOBAL RESET: override Results.css leaking into ComparisonTable ─────── */
+/* Results.css has global .score-value { position: absolute; transform: ... }
+   and .score-display { flex-direction: column } which breaks our layout. */
+
+.comparison-table-wrapper .score-display {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: baseline !important;
+  justify-content: center !important;
+  gap: 0.35rem !important;
+  margin-bottom: 0.5rem;
+  position: relative;
+}
+
+.comparison-table-wrapper .score-value {
+  position: static !important;
+  top: auto !important;
+  left: auto !important;
+  transform: none !important;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #ffffff !important;
+  line-height: 1;
+  text-align: center;
+}
+
+.comparison-table-wrapper .score-max {
+  position: static !important;
+  font-size: 0.82rem;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.4) !important;
+}
+
+.best-check {
+  margin-left: 0.25rem;
+  color: #34d399;
+  font-weight: 700;
+  font-size: 0.95rem;
+  flex-shrink: 0;
+}
+
+/* Total Score Row */
+.total-row {
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.total-row .metric-name {
+  font-weight: 800;
+  font-size: 0.92rem;
+}
+
+.total-cell {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.comparison-table-wrapper .total-score-display .score-value,
+.comparison-table-wrapper .total-cell .score-value {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #ffffff !important;
+}
+
+.total-score-value {
+  font-weight: 800;
+}
+
+/* ── Score Bar ──────────────────────────────────────────────────────────── */
+
+.score-bar-container {
+  width: 100%;
+  height: 7px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.score-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.15);
+}
+
+/* ── Risk Badge ─────────────────────────────────────────────────────────── */
+
+.risk-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.risk-low {
+  background: rgba(16, 185, 129, 0.12);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.risk-medium {
+  background: rgba(245, 158, 11, 0.12);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.risk-high {
+  background: rgba(239, 68, 68, 0.12);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.risk-unknown {
+  background: rgba(156, 163, 175, 0.12);
+  color: #9ca3af;
+  border: 1px solid rgba(156, 163, 175, 0.25);
+}
+
+/* ── Flags Summary ──────────────────────────────────────────────────────── */
+
+.flags-summary {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.flags-total {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.flags-none {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.4);
+  font-style: italic;
+}
+
+.flags-breakdown {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.flag-count {
+  font-size: 0.7rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 10px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.flag-high {
+  background: rgba(239, 68, 68, 0.18);
+  color: #f87171;
+}
+
+.flag-medium {
+  background: rgba(245, 158, 11, 0.18);
+  color: #fbbf24;
+}
+
+.flag-low {
+  background: rgba(59, 130, 246, 0.18);
+  color: #60a5fa;
+}
+
+/* ── Detail Rows (Key Strengths / Concerns) ─────────────────────────────── */
+
+.detail-row.collapsed .detail-cell {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+.detail-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  text-align: left;
+}
+
+.detail-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.4rem 0;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.detail-list .item-icon {
+  flex-shrink: 0;
+  width: 1rem;
+  text-align: center;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.strengths-list .item-icon {
+  color: #34d399;
+}
+
+.concerns-list .item-icon {
+  color: #fbbf24;
+}
+
+.detail-list .no-items {
+  color: rgba(255, 255, 255, 0.35);
+  font-style: italic;
+}
+
+/* ============================================================================
+   MOBILE CARD VIEW
+   ============================================================================ */
+
+.comparison-cards-mobile {
+  display: none; /* Hidden on desktop */
+}
+
+/* ============================================================================
+   ACTION BUTTONS
+   ============================================================================ */
+
+.comparison-actions {
+  display: flex;
+  gap: 0.85rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.comparison-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.85rem 1.75rem;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  font-family: inherit;
+}
+
+.comparison-action-btn .btn-icon {
+  font-size: 1rem;
+}
+
+.back-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.back-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.new-btn {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 18px rgba(99, 102, 241, 0.3);
+}
+
+.new-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(99, 102, 241, 0.4);
+}
+
+.new-btn:active {
+  transform: translateY(0);
+}
+
+/* Comparison ID */
+.comparison-id {
+  text-align: center;
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.25);
+  margin: 0;
+  font-family: "SF Mono", "Fira Code", "Courier New", monospace;
+}
+
+/* ============================================================================
+   ERROR STATE
+   ============================================================================ */
+
+.comparison-table-error {
+  text-align: center;
+  padding: 3.5rem 1.5rem;
+  background: linear-gradient(135deg, #1a1f2e 0%, #0f1218 100%);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.comparison-table-error .error-icon {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  display: block;
+}
+
+.comparison-table-error p {
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 1.25rem;
+  font-size: 0.95rem;
+}
+
+.comparison-table-error .error-btn {
+  padding: 0.7rem 1.5rem;
+  background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+  border: none;
+  border-radius: 10px;
+  color: #ffffff;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  font-family: inherit;
+}
+
+.comparison-table-error .error-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.35);
+}
+
+/* ============================================================================
+   RESPONSIVE DESIGN
+   ============================================================================ */
+
+@media (max-width: 900px) {
+  .comparison-table-wrapper {
+    padding: 1rem;
+  }
+
+  .comparison-summary-banner {
+    padding: 1.25rem;
+  }
+
+  .winner-title {
+    font-size: 1.35rem;
+  }
+
+  .winner-score-badge .score-value {
+    font-size: 1.5rem;
+  }
+
+  .metric-header {
+    width: 150px;
+  }
+}
+
+/* Mobile — switch to card layout */
+@media (max-width: 640px) {
+  .comparison-table-container {
+    display: none;
+  }
+
+  .comparison-cards-mobile {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .candidate-card {
+    background: linear-gradient(135deg, #1a1f2e 0%, #0f1218 100%);
+    border-radius: 16px;
+    padding: 1.25rem;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+  }
+
+  .candidate-card.winner-card {
+    border-color: rgba(16, 185, 129, 0.35);
+    box-shadow:
+      0 8px 35px rgba(16, 185, 129, 0.12),
+      inset 0 1px 0 rgba(16, 185, 129, 0.1);
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .card-crown {
+    font-size: 1.3rem;
+    animation: cmpBounce 2s ease-in-out infinite;
+  }
+
+  .card-name {
+    flex: 1;
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #f1f5f9;
+    word-break: break-word;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .card-rank {
+    font-size: 0.78rem;
+    color: rgba(255, 255, 255, 0.45);
+    padding: 0.25rem 0.65rem;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    font-weight: 500;
+  }
+
+  .card-score-main {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 0.35rem;
+    margin-bottom: 1rem;
+  }
+
+  .card-score-value {
+    font-size: 2.25rem;
+    font-weight: 800;
+    color: #ffffff;
+    line-height: 1;
+  }
+
+  .winner-card .card-score-value {
+    color: #34d399;
+  }
+
+  .card-score-max {
+    font-size: 1.1rem;
+    color: rgba(255, 255, 255, 0.4);
+    font-weight: 400;
+  }
+
+  .card-scores-breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin-bottom: 1rem;
+    padding: 0.85rem;
+    background: rgba(0, 0, 0, 0.25);
+    border-radius: 10px;
+  }
+
+  .card-score-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .card-score-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.5);
+    min-width: 45px;
+  }
+
+  .card-score-num {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #e2e8f0;
+    min-width: 55px;
+  }
+
+  .card-score-item .score-bar-container {
+    flex: 1;
+  }
+
+  .card-risk {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    margin-bottom: 1rem;
+  }
+
+  .card-section {
+    margin-bottom: 0.75rem;
+  }
+
+  .card-section-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.6);
+    margin: 0 0 0.5rem;
+  }
+
+  .card-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .card-list li {
+    padding: 0.35rem 0;
+    font-size: 0.82rem;
+    color: rgba(255, 255, 255, 0.75);
+    padding-left: 1rem;
+    position: relative;
+    line-height: 1.45;
+  }
+
+  .card-list li::before {
+    content: "✓";
+    position: absolute;
+    left: 0;
+    color: #34d399;
+    font-weight: 700;
+  }
+
+  .card-list.concerns li::before {
+    content: "!";
+    color: #fbbf24;
+  }
+
+  .summary-winner-section {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .winner-info {
+    text-align: center;
+  }
+
+  .trophy-icon {
+    font-size: 2.25rem;
+  }
+
+  .winner-title {
+    font-size: 1.25rem;
+  }
+
+  .summary-meta {
+    justify-content: center;
+  }
+
+  .comparison-actions {
+    flex-direction: column;
+  }
+
+  .comparison-action-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Tiny screens */
+@media (max-width: 380px) {
+  .comparison-table-wrapper {
+    padding: 0.75rem;
+  }
+
+  .comparison-summary-banner {
+    padding: 1rem;
+  }
+
+  .winner-title {
+    font-size: 1.1rem;
+  }
+
+  .card-score-value {
+    font-size: 1.85rem;
+  }
+}
+
+/* ============================================================================
+   LOADING SKELETON
+   ============================================================================ */
+
+.comparison-skeleton {
+  width: 100%;
+  animation: cmpFadeIn 0.3s ease-out;
+}
+
+@keyframes cmpShimmer {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: calc(200px + 100%) 0;
+  }
+}
+
+.skeleton-banner {
+  padding: 1.5rem;
+  background: rgba(16, 185, 129, 0.06);
+  border-radius: 14px;
+  margin-bottom: 1.5rem;
+  border: 1px solid rgba(16, 185, 129, 0.08);
+}
+
+.skeleton-line {
+  height: 14px;
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.04) 0%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0.04) 100%
+  );
+  background-size: 200px 100%;
+  animation: cmpShimmer 1.5s ease-in-out infinite;
+}
+
+.skeleton-title {
+  width: 60%;
+  height: 26px;
+  margin-bottom: 0.75rem;
+}
+
+.skeleton-subtitle {
+  width: 40%;
+  height: 16px;
+  margin-bottom: 1rem;
+}
+
+.skeleton-text {
+  width: 90%;
+  height: 12px;
+}
+
+.skeleton-table {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.skeleton-row {
+  display: grid;
+  grid-template-columns: 150px repeat(2, 1fr);
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.skeleton-row.skeleton-header {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.skeleton-cell {
+  height: 18px;
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.04) 0%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.04) 100%
+  );
+  background-size: 200px 100%;
+  animation: cmpShimmer 1.5s ease-in-out infinite;
+}
+
+.skeleton-row.skeleton-header .skeleton-cell {
+  height: 22px;
+}
+
+.skeleton-label {
+  width: 80%;
+}
+
+.skeleton-bar {
+  height: 10px;
+  width: 100%;
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    rgba(16, 185, 129, 0.08) 0%,
+    rgba(16, 185, 129, 0.16) 50%,
+    rgba(16, 185, 129, 0.08) 100%
+  );
+  background-size: 200px 100%;
+  animation: cmpShimmer 1.5s ease-in-out infinite;
+}
+
+.skeleton-loading-text {
+  text-align: center;
+  padding: 2rem;
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 0.88rem;
+  animation: cmpPulse 2s ease-in-out infinite;
+}
+
+@keyframes cmpPulse {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 640px) {
+  .skeleton-row {
+    grid-template-columns: 1fr;
+    gap: 0.6rem;
+  }
+
+  .skeleton-row.skeleton-header {
+    display: none;
+  }
+}
+
+/* ============================================================================
+   TOOLTIP STYLES
+   ============================================================================ */
+
+.tooltip-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.tooltip-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin-left: 0.35rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.45);
+  cursor: help;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.tooltip-trigger:hover {
+  background: rgba(99, 102, 241, 0.25);
+  color: #a5b4fc;
+}
+
+.tooltip-content {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-8px);
+  padding: 0.6rem 0.85rem;
+  background: #1e293b;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  font-size: 0.75rem;
+  color: #e2e8f0;
+  line-height: 1.45;
+  white-space: nowrap;
+  max-width: 260px;
+  z-index: 100;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s ease;
+  pointer-events: none;
+}
+
+.tooltip-wrapper:hover .tooltip-content {
+  opacity: 1;
+  visibility: visible;
+}
+
+.tooltip-content::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: #1e293b;
+}
+
+/* ============================================================================
+   PRINT STYLES
+   ============================================================================ */
+
+@media print {
+  .comparison-table-wrapper {
+    padding: 0;
+  }
+
+  .comparison-summary-banner {
+    background: #f8fafc !important;
+    color: #111827 !important;
+    border: 1px solid #e5e7eb;
+    box-shadow: none;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .comparison-summary-banner * {
+    color: #111827 !important;
+  }
+
+  .comparison-table-container {
+    box-shadow: none;
+    border: 1px solid #d1d5db;
+  }
+
+  .comparison-actions,
+  .comparison-id {
+    display: none !important;
+  }
+}
