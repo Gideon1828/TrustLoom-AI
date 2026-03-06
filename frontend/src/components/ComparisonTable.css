@@ -624,14 +624,14 @@
 }
 
 .new-btn {
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  background: linear-gradient(135deg, #3b82f6 0%, #0891b2 100%);
   color: #ffffff;
-  box-shadow: 0 4px 18px rgba(99, 102, 241, 0.3);
+  box-shadow: 0 4px 18px rgba(37, 99, 235, 0.3);
 }
 
 .new-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 28px rgba(99, 102, 241, 0.4);
+  box-shadow: 0 8px 28px rgba(37, 99, 235, 0.4);
 }
 
 .new-btn:active {
@@ -673,7 +673,7 @@
 
 .comparison-table-error .error-btn {
   padding: 0.7rem 1.5rem;
-  background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+  background: linear-gradient(135deg, #3b82f6 0%, #3b82f6 100%);
   border: none;
   border-radius: 10px;
   color: #ffffff;
@@ -1103,8 +1103,8 @@
 }
 
 .tooltip-trigger:hover {
-  background: rgba(99, 102, 241, 0.25);
-  color: #a5b4fc;
+  background: rgba(37, 99, 235, 0.25);
+  color: #93c5fd;
 }
 
 .tooltip-content {

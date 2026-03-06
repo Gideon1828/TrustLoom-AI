@@ -269,8 +269,8 @@ const InputForm = ({ onEvaluationComplete, onLoadingStart, isLoading, onCancelEv
     try {
       onLoadingStart();
 
-      // Set estimated time (~50 seconds)
-      setEstimatedTime(50);
+      // Set estimated time (~30 seconds)
+      setEstimatedTime(30);
       setElapsedTime(0);
 
       // Start elapsed time counter
@@ -313,24 +313,8 @@ const InputForm = ({ onEvaluationComplete, onLoadingStart, isLoading, onCancelEv
         expires_at: uploadResponse.data.expires_at
       };
 
-      // Step 2: Analyze resume with BERT (10s transition)
-      setLoadingStatus("🧠 Analyzing language quality with BERT AI...");
-      await new Promise((resolve, reject) => {
-        const timer = setTimeout(resolve, 10000);
-        abortController.signal.addEventListener("abort", () => { clearTimeout(timer); reject(new axios.Cancel("Evaluation cancelled by user")); });
-      });
-
-      // Step 3: Evaluate patterns with LSTM (10s transition)
-      setLoadingStatus("🔮 Evaluating project patterns with LSTM...");
-      await new Promise((resolve, reject) => {
-        const timer = setTimeout(resolve, 10000);
-        abortController.signal.addEventListener("abort", () => { clearTimeout(timer); reject(new axios.Cancel("Evaluation cancelled by user")); });
-      });
-
-      // Step 4: Validate profiles
-      setLoadingStatus("🔗 Validating GitHub and LinkedIn profiles...");
-
-      // Step 5: Call evaluation endpoint with retry
+      // Step 2: Call evaluation endpoint (BERT, LSTM, link validation all happen server-side)
+      setLoadingStatus("🧠 Analyzing profile with AI models...");
       const evaluationResponse = await apiCallWithRetry(async () => {
         return await axios.post(
           `${API_BASE_URL}/evaluate`,
@@ -351,9 +335,8 @@ const InputForm = ({ onEvaluationComplete, onLoadingStart, isLoading, onCancelEv
       // Check if cancelled
       if (abortController.signal.aborted) throw new axios.Cancel("Evaluation cancelled by user");
 
-      // Step 6: Finalizing results
-      setLoadingStatus("✅ Calculating final trust score...");
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      // Finalizing results
+      setLoadingStatus("✅ Evaluation complete!");
 
       // Clear timer
       if (timerInterval) clearInterval(timerInterval);
@@ -776,29 +759,19 @@ const InputForm = ({ onEvaluationComplete, onLoadingStart, isLoading, onCancelEv
           {isLoading && (
             <div className="loading-status">
               <div className="loading-steps">
-                <div className={`loading-step ${loadingStatus.includes("Uploading") ? "active" : loadingStatus.includes("Analyzing") || loadingStatus.includes("Evaluating") || loadingStatus.includes("Validating") || loadingStatus.includes("Calculating") ? "done" : ""}`}>
+                <div className={`loading-step ${loadingStatus.includes("Uploading") ? "active" : loadingStatus.includes("Analyzing") || loadingStatus.includes("complete") ? "done" : ""}`}>
                   <div className="step-dot"></div>
-                  <span>Upload</span>
+                  <span>Upload Resume</span>
                 </div>
                 <div className="step-connector"></div>
-                <div className={`loading-step ${loadingStatus.includes("Analyzing") ? "active" : loadingStatus.includes("Evaluating") || loadingStatus.includes("Validating") || loadingStatus.includes("Calculating") ? "done" : ""}`}>
+                <div className={`loading-step ${loadingStatus.includes("Analyzing") ? "active" : loadingStatus.includes("complete") ? "done" : ""}`}>
                   <div className="step-dot"></div>
-                  <span>BERT Analysis</span>
+                  <span>AI Analysis</span>
                 </div>
                 <div className="step-connector"></div>
-                <div className={`loading-step ${loadingStatus.includes("Evaluating") ? "active" : loadingStatus.includes("Validating") || loadingStatus.includes("Calculating") ? "done" : ""}`}>
+                <div className={`loading-step ${loadingStatus.includes("complete") ? "active" : ""}`}>
                   <div className="step-dot"></div>
-                  <span>LSTM Evaluation</span>
-                </div>
-                <div className="step-connector"></div>
-                <div className={`loading-step ${loadingStatus.includes("Validating") ? "active" : loadingStatus.includes("Calculating") ? "done" : ""}`}>
-                  <div className="step-dot"></div>
-                  <span>Profile Validation</span>
-                </div>
-                <div className="step-connector"></div>
-                <div className={`loading-step ${loadingStatus.includes("Calculating") ? "active" : ""}`}>
-                  <div className="step-dot"></div>
-                  <span>Scoring</span>
+                  <span>Done</span>
                 </div>
               </div>
 

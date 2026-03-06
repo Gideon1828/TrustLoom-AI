@@ -96,26 +96,48 @@ class ProjectExtractor:
         self._llm_client = None
         self._llm_model_name = 'gemini-2.5-flash'  # Use 2.5 Flash (has quota)
         self._initialized = False
+        self._api_keys = []
+        self._current_key_index = 0
         
-        # Get API key from environment
-        api_key = os.environ.get('GEMINI_API_KEY') or os.environ.get('GOOGLE_API_KEY')
+        # Collect all available API keys
+        primary_key = os.environ.get('GEMINI_API_KEY') or os.environ.get('GOOGLE_API_KEY')
+        secondary_key = os.environ.get('GEMINI_API_KEY1')
         
         if not GEMINI_AVAILABLE:
             logger.error("❌ google-genai package not installed. Run: pip install google-genai")
             raise RuntimeError("Gemini SDK not available. Install with: pip install google-genai")
         
-        if not api_key:
+        if primary_key:
+            self._api_keys.append(primary_key)
+        if secondary_key:
+            self._api_keys.append(secondary_key)
+        
+        if not self._api_keys:
             logger.error("❌ GEMINI_API_KEY not found in environment")
             raise RuntimeError("GEMINI_API_KEY environment variable not set")
         
         # Initialize Gemini client (lazy model verification)
         try:
-            self._llm_client = genai.Client(api_key=api_key)
+            self._llm_client = genai.Client(api_key=self._api_keys[0])
+            self._current_key_index = 0
             self._initialized = True
-            logger.info(f"✅ ProjectExtractor v5.0 (LLM-Only) initialized with model: {self._llm_model_name}")
+            logger.info(f"✅ ProjectExtractor v5.0 (LLM-Only) initialized with model: {self._llm_model_name} (keys: {len(self._api_keys)})")
         except Exception as e:
             logger.error(f"❌ Failed to initialize Gemini client: {e}")
             raise RuntimeError(f"Gemini initialization failed: {e}")
+    
+    def _switch_to_next_key(self) -> bool:
+        """Switch to the next available API key. Returns True if switched successfully."""
+        next_index = self._current_key_index + 1
+        if next_index < len(self._api_keys):
+            try:
+                self._llm_client = genai.Client(api_key=self._api_keys[next_index])
+                self._current_key_index = next_index
+                logger.info(f"🔄 ProjectExtractor switched to API key {next_index + 1}/{len(self._api_keys)}")
+                return True
+            except Exception as e:
+                logger.error(f"❌ Failed to switch API key: {e}")
+        return False
     
     def extract_all_indicators(self, resume_text: str) -> Dict:
         """
@@ -264,39 +286,49 @@ class ProjectExtractor:
         # Build structured prompt for Gemini
         prompt = self._build_extraction_prompt(resume_text)
         
-        # Retry logic for rate limits
-        max_retries = 3
-        retry_delay = 5  # seconds
+        # Retry logic for rate limits with key rotation
+        max_retries = 2  # retries per key
+        keys_tried = 0
+        total_keys = len(self._api_keys)
         
-        for attempt in range(max_retries):
-            try:
-                # Use temperature=0 for deterministic extraction
-                response = self._llm_client.models.generate_content(
-                    model=self._llm_model_name,
-                    contents=prompt,
-                    config=types.GenerateContentConfig(
-                        temperature=0.0,  # Deterministic output
-                        max_output_tokens=4096
+        while keys_tried < total_keys:
+            for attempt in range(max_retries):
+                try:
+                    # Use temperature=0 for deterministic extraction
+                    response = self._llm_client.models.generate_content(
+                        model=self._llm_model_name,
+                        contents=prompt,
+                        config=types.GenerateContentConfig(
+                            temperature=0.0,  # Deterministic output
+                            max_output_tokens=4096
+                        )
                     )
-                )
-                
-                # Parse response
-                response_text = response.text.strip()
-                projects = self._parse_llm_response(response_text)
-                
-                return projects
-                
-            except Exception as e:
-                error_str = str(e)
-                if '429' in error_str or 'RESOURCE_EXHAUSTED' in error_str:
-                    if attempt < max_retries - 1:
-                        wait_time = retry_delay * (2 ** attempt)  # Exponential backoff
-                        logger.warning(f"Rate limit hit, retrying in {wait_time}s (attempt {attempt + 1}/{max_retries})")
-                        time.sleep(wait_time)
-                        continue
-                logger.error(f"LLM extraction failed: {e}")
-                return []
+                    
+                    # Parse response
+                    response_text = response.text.strip()
+                    projects = self._parse_llm_response(response_text)
+                    
+                    return projects
+                    
+                except Exception as e:
+                    error_str = str(e)
+                    if '429' in error_str or 'RESOURCE_EXHAUSTED' in error_str:
+                        logger.warning(f"Rate limit hit on key {keys_tried + 1} (attempt {attempt + 1}/{max_retries})")
+                        if attempt < max_retries - 1:
+                            time.sleep(1)
+                    else:
+                        logger.error(f"LLM extraction failed: {e}")
+                        return []
+            
+            # Try switching to next key
+            keys_tried += 1
+            if keys_tried < total_keys:
+                if self._switch_to_next_key():
+                    logger.info(f"🔄 Retrying extraction with next API key...")
+                else:
+                    break
         
+        logger.warning("All API keys exhausted for project extraction")
         return []
     
     def _build_extraction_prompt(self, resume_text: str) -> str:

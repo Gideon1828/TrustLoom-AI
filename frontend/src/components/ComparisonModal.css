@@ -137,7 +137,7 @@
 }
 
 .step-dot.active {
-  background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+  background: linear-gradient(135deg, #3b82f6 0%, #3b82f6 100%);
   border-color: transparent;
   box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
 }
@@ -426,7 +426,7 @@
 
 .upload-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #3b82f6 0%, #6366f1 100%);
+  background: linear-gradient(90deg, #3b82f6 0%, #3b82f6 100%);
   border-radius: 3px;
   transition: width 0.3s ease;
 }
@@ -539,7 +539,7 @@
 }
 
 .spinner-ring:nth-child(2) {
-  border-right-color: #8b5cf6;
+  border-right-color: #0891b2;
   animation: spin 2s linear infinite reverse;
 }
 
@@ -593,7 +593,7 @@
   justify-content: center;
   gap: 10px;
   padding: 14px 20px;
-  background: rgba(139, 92, 246, 0.1);
+  background: rgba(8, 145, 178, 0.1);
   border-radius: 10px;
 }
 
@@ -645,7 +645,7 @@
   align-items: center;
   gap: 8px;
   padding: 12px 24px;
-  background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+  background: linear-gradient(135deg, #3b82f6 0%, #3b82f6 100%);
   border: none;
   border-radius: 10px;
   color: #ffffff;
@@ -715,7 +715,7 @@
 }
 
 .modal-btn.continue-btn {
-  background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+  background: linear-gradient(135deg, #3b82f6 0%, #3b82f6 100%);
   color: #ffffff;
   margin-left: auto;
 }

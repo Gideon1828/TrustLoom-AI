@@ -27,7 +27,7 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #2563eb 0%, #0284c7 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -265,7 +265,7 @@
 }
 
 .theme-switch-track.dark {
-  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  background: linear-gradient(135deg, #1d4ed8 0%, #0e7490 100%);
 }
 
 .theme-switch-track.light {
@@ -293,12 +293,12 @@
    ============================================================================ */
 
 [data-theme="dark"] .user-menu-dropdown {
-  background: var(--bg-card, #1a1a2e);
+  background: var(--bg-card, #0f1a2e);
   box-shadow: var(--shadow-dropdown, 0 10px 40px rgba(0, 0, 0, 0.4));
 }
 
 [data-theme="dark"] .user-menu-header {
-  background: var(--bg-secondary, #1f1f2e);
+  background: var(--bg-secondary, #131f33);
 }
 
 [data-theme="dark"] .user-full-name {
@@ -322,12 +322,12 @@
 }
 
 [data-theme="dark"] .user-menu-item:hover:not(:disabled) {
-  background: var(--bg-tertiary, #252536);
+  background: var(--bg-tertiary, #1a2640);
 }
 
 [data-theme="dark"] .user-menu-item .coming-soon {
   color: var(--text-muted, #6b7280);
-  background: var(--bg-tertiary, #252536);
+  background: var(--bg-tertiary, #1a2640);
 }
 
 [data-theme="dark"] .user-menu-item.logout {

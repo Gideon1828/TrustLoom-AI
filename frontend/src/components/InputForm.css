@@ -56,7 +56,7 @@
 .form-header-icon {
   width: 48px;
   height: 48px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #2563eb 0%, #0284c7 100%);
   border-radius: 12px;
   display: flex;
   align-items: center;
@@ -117,7 +117,7 @@
 
 .completion-fill {
   height: 100%;
-  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(90deg, #2563eb 0%, #0284c7 100%);
   border-radius: 99px;
   transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -149,7 +149,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #667eea;
+  color: #2563eb;
   flex-shrink: 0;
 }
 
@@ -235,12 +235,12 @@
 }
 
 .file-drop-zone:hover {
-  border-color: #667eea;
+  border-color: #2563eb;
   background: #f8f7ff;
 }
 
 .file-drop-zone.dragging {
-  border-color: #667eea;
+  border-color: #2563eb;
   background: #eef2ff;
   transform: scale(1.01);
   box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
@@ -271,7 +271,7 @@
 }
 
 .file-drop-zone:hover .upload-icon-svg {
-  color: #667eea;
+  color: #2563eb;
   opacity: 1;
 }
 
@@ -282,7 +282,7 @@
 }
 
 .drop-highlight {
-  color: #667eea;
+  color: #2563eb;
   font-weight: 600;
   text-decoration: underline;
   text-underline-offset: 2px;
@@ -371,7 +371,7 @@
 
 .progress-bar {
   height: 100%;
-  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(90deg, #2563eb 0%, #0284c7 100%);
   transition: width 0.3s ease;
   border-radius: 99px;
 }
@@ -409,13 +409,13 @@
 
 .form-input:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: #2563eb;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.12);
 }
 
 .form-input:focus + .input-icon-svg,
 .input-with-icon:focus-within .input-icon-svg {
-  color: #667eea;
+  color: #2563eb;
 }
 
 .form-input::placeholder {
@@ -457,7 +457,7 @@
 
 .form-select:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: #2563eb;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.12);
 }
 
@@ -526,7 +526,7 @@
 .submit-info svg {
   flex-shrink: 0;
   margin-top: 1px;
-  color: #667eea;
+  color: #2563eb;
 }
 
 .submit-btn {
@@ -535,7 +535,7 @@
   font-size: 1rem;
   font-weight: 600;
   color: white;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #2563eb 0%, #0284c7 100%);
   border: none;
   border-radius: 12px;
   cursor: pointer;
@@ -643,13 +643,13 @@
 
 .loading-step.active .step-dot {
   background: white;
-  border-color: #667eea;
+  border-color: #2563eb;
   box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.2);
   animation: dotPulse 1.5s ease-in-out infinite;
 }
 
 .loading-step.active span {
-  color: #667eea;
+  color: #2563eb;
 }
 
 .loading-step.done .step-dot {
@@ -689,7 +689,7 @@
   width: 48px;
   height: 48px;
   border: 4px solid #e5e7eb;
-  border-top: 4px solid #667eea;
+  border-top: 4px solid #2563eb;
   border-radius: 50%;
   animation: spin 0.9s linear infinite;
 }
@@ -815,7 +815,7 @@
   content: "";
   width: 3px;
   height: 16px;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: linear-gradient(135deg, #2563eb, #0284c7);
   border-radius: 99px;
 }
 
@@ -834,7 +834,7 @@
 .info-step-number {
   width: 28px;
   height: 28px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #2563eb 0%, #0284c7 100%);
   color: white;
   border-radius: 8px;
   display: flex;

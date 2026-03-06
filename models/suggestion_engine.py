@@ -43,6 +43,7 @@ Module: 22 (Add-on)
 import os
 import json
 import logging
+import time
 from enum import Enum
 from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass, field
@@ -818,6 +819,8 @@ class SuggestionEngine:
         self._llm_model_name: str = 'gemini-2.5-flash'
         self._llm_available: bool = False
         self._initialized: bool = False
+        self._api_keys: list = []
+        self._current_key_index: int = 0
         
         # Cache for LLM-generated suggestions (reduces API calls for similar flags)
         self._suggestion_cache: Dict[str, Dict[str, Any]] = {}
@@ -838,7 +841,7 @@ class SuggestionEngine:
     
     def _initialize_llm(self) -> None:
         """
-        Initialize the Gemini LLM client.
+        Initialize the Gemini LLM client with multi-key support.
         
         Sets self._llm_available to True if successful, False otherwise.
         The engine will fall back to template-based suggestions if LLM
@@ -855,10 +858,16 @@ class SuggestionEngine:
             self._initialized = True
             return
         
-        # Get API key from environment
-        api_key = os.environ.get('GEMINI_API_KEY') or os.environ.get('GOOGLE_API_KEY')
+        # Collect all available API keys
+        primary_key = os.environ.get('GEMINI_API_KEY') or os.environ.get('GOOGLE_API_KEY')
+        secondary_key = os.environ.get('GEMINI_API_KEY1')
         
-        if not api_key:
+        if primary_key:
+            self._api_keys.append(primary_key)
+        if secondary_key:
+            self._api_keys.append(secondary_key)
+        
+        if not self._api_keys:
             logger.warning(
                 "⚠️  GEMINI_API_KEY not found in environment. "
                 "Suggestion Engine will use template-based suggestions only. "
@@ -870,12 +879,13 @@ class SuggestionEngine:
         
         # Initialize Gemini client
         try:
-            self._llm_client = genai.Client(api_key=api_key)
+            self._llm_client = genai.Client(api_key=self._api_keys[0])
+            self._current_key_index = 0
             self._llm_available = True
             self._initialized = True
             logger.info(
                 f"✅ Suggestion Engine v1.0 initialized with Gemini LLM "
-                f"(model: {self._llm_model_name})"
+                f"(model: {self._llm_model_name}, keys: {len(self._api_keys)})"
             )
         except Exception as e:
             logger.warning(
@@ -884,6 +894,19 @@ class SuggestionEngine:
             )
             self._llm_available = False
             self._initialized = True
+    
+    def _switch_to_next_key(self) -> bool:
+        """Switch to the next available API key. Returns True if switched successfully."""
+        next_index = self._current_key_index + 1
+        if next_index < len(self._api_keys):
+            try:
+                self._llm_client = genai.Client(api_key=self._api_keys[next_index])
+                self._current_key_index = next_index
+                logger.info(f"🔄 SuggestionEngine switched to API key {next_index + 1}/{len(self._api_keys)}")
+                return True
+            except Exception as e:
+                logger.error(f"❌ Failed to switch API key: {e}")
+        return False
     
     @property
     def llm_available(self) -> bool:
@@ -1768,60 +1791,64 @@ GUIDELINES:
         # Build prompt
         prompt = self._build_suggestion_prompt(flag, template, category)
         
-        # Call Gemini with retry logic
-        max_retries = 3
-        retry_delay = 2  # seconds
+        # Call Gemini with retry logic and key rotation
+        max_retries = 2
+        keys_tried = 0
+        total_keys = len(self._api_keys) if self._api_keys else 1
         
-        for attempt in range(max_retries):
-            try:
-                response = self._llm_client.models.generate_content(
-                    model=self._llm_model_name,
-                    contents=prompt
-                )
-                
-                # Parse response
-                response_text = response.text.strip()
-                parsed = self._parse_llm_response(response_text)
-                
-                if parsed:
-                    # Build enhanced suggestion
-                    enhanced = {
-                        'id': suggestion_id,
-                        'category': category.value,
-                        'title': template.get('title', 'Improvement Suggestion'),
-                        'flag_reference': flag.get('message', 'Issue detected'),
-                        'suggestion': parsed.get('suggestion', template.get('base_suggestion', '')),
-                        'action_steps': parsed.get('action_steps', template.get('action_steps', [])),
-                        'examples': parsed.get('examples', template.get('examples', [])),
-                        'potential_impact': template.get('potential_impact', 1),
-                        'priority': self._get_priority_from_severity(flag.get('severity', 'medium')),
-                        'llm_enhanced': True
-                    }
+        while keys_tried < total_keys:
+            for attempt in range(max_retries):
+                try:
+                    response = self._llm_client.models.generate_content(
+                        model=self._llm_model_name,
+                        contents=prompt
+                    )
                     
-                    # Cache the result (without ID for reuse)
-                    cache_entry = enhanced.copy()
-                    del cache_entry['id']
-                    self._suggestion_cache[cache_key] = cache_entry
+                    # Parse response
+                    response_text = response.text.strip()
+                    parsed = self._parse_llm_response(response_text)
                     
-                    return enhanced
-                
-            except Exception as e:
-                error_str = str(e)
-                
-                # Handle rate limits
-                if '429' in error_str or 'RESOURCE_EXHAUSTED' in error_str:
-                    if attempt < max_retries - 1:
-                        wait_time = retry_delay * (2 ** attempt)
-                        logger.warning(
-                            f"Rate limit hit, retrying in {wait_time}s "
-                            f"(attempt {attempt + 1}/{max_retries})"
-                        )
-                        import time
-                        time.sleep(wait_time)
+                    if parsed:
+                        # Build enhanced suggestion
+                        enhanced = {
+                            'id': suggestion_id,
+                            'category': category.value,
+                            'title': template.get('title', 'Improvement Suggestion'),
+                            'flag_reference': flag.get('message', 'Issue detected'),
+                            'suggestion': parsed.get('suggestion', template.get('base_suggestion', '')),
+                            'action_steps': parsed.get('action_steps', template.get('action_steps', [])),
+                            'examples': parsed.get('examples', template.get('examples', [])),
+                            'potential_impact': template.get('potential_impact', 1),
+                            'priority': self._get_priority_from_severity(flag.get('severity', 'medium')),
+                            'llm_enhanced': True
+                        }
+                        
+                        # Cache the result (without ID for reuse)
+                        cache_entry = enhanced.copy()
+                        del cache_entry['id']
+                        self._suggestion_cache[cache_key] = cache_entry
+                        
+                        return enhanced
+                    
+                except Exception as e:
+                    error_str = str(e)
+                    
+                    # Handle rate limits
+                    if '429' in error_str or 'RESOURCE_EXHAUSTED' in error_str:
+                        logger.warning(f"Rate limit hit on key {keys_tried + 1} (attempt {attempt + 1}/{max_retries})")
+                        if attempt < max_retries - 1:
+                            time.sleep(1)
                         continue
-                
-                # Log other errors
-                logger.warning(f"LLM suggestion generation failed: {e}")
+                    
+                    # Log other errors
+                    logger.warning(f"LLM suggestion generation failed: {e}")
+                    return None
+            
+            # Try switching to next key
+            keys_tried += 1
+            if keys_tried < total_keys and self._switch_to_next_key():
+                logger.info(f"🔄 Retrying suggestion with next API key...")
+            else:
                 break
         
         # Return None to signal fallback needed
@@ -1906,63 +1933,71 @@ GUIDELINES:
         # Build batch prompt
         prompt = self._build_batch_suggestion_prompt(batch)
         
-        max_retries = 3
+        max_retries = 2
         retry_delay = 2
+        keys_tried = 0
+        total_keys = len(self._api_keys) if self._api_keys else 1
         
-        for attempt in range(max_retries):
-            try:
-                response = self._llm_client.models.generate_content(
-                    model=self._llm_model_name,
-                    contents=prompt
-                )
-                
-                response_text = response.text.strip()
-                parsed = self._parse_batch_llm_response(response_text)
-                
-                if parsed:
-                    # Build lookup for batch items
-                    batch_lookup = {item['suggestion_id']: item for item in batch}
+        while keys_tried < total_keys:
+            for attempt in range(max_retries):
+                try:
+                    response = self._llm_client.models.generate_content(
+                        model=self._llm_model_name,
+                        contents=prompt
+                    )
                     
-                    for suggestion_data in parsed:
-                        sid = suggestion_data.get('id', '')
-                        if sid in batch_lookup:
-                            item = batch_lookup[sid]
-                            template = item['template']
-                            
-                            enhanced = {
-                                'id': sid,
-                                'category': item['category'].value,
-                                'title': template.get('title', 'Improvement Suggestion'),
-                                'flag_reference': item['flag'].get('message', 'Issue detected'),
-                                'suggestion': suggestion_data.get('suggestion', template.get('base_suggestion', '')),
-                                'action_steps': suggestion_data.get('action_steps', template.get('action_steps', [])),
-                                'examples': suggestion_data.get('examples', template.get('examples', [])),
-                                'potential_impact': template.get('potential_impact', 1),
-                                'priority': self._get_priority_from_severity(item['flag'].get('severity', 'medium')),
-                                'llm_enhanced': True
-                            }
-                            results[sid] = enhanced
-                            
-                            # Cache the result
-                            cache_key = self._get_cache_key(item['flag'], template)
-                            cache_entry = enhanced.copy()
-                            del cache_entry['id']
-                            self._suggestion_cache[cache_key] = cache_entry
+                    response_text = response.text.strip()
+                    parsed = self._parse_batch_llm_response(response_text)
                     
-                    return results
-                
-            except Exception as e:
-                error_str = str(e)
-                
-                if '429' in error_str or 'RESOURCE_EXHAUSTED' in error_str:
-                    if attempt < max_retries - 1:
-                        wait_time = retry_delay * (2 ** attempt)
-                        logger.warning(f"Rate limit hit on batch, retrying in {wait_time}s")
-                        import time
-                        time.sleep(wait_time)
+                    if parsed:
+                        # Build lookup for batch items
+                        batch_lookup = {item['suggestion_id']: item for item in batch}
+                        
+                        for suggestion_data in parsed:
+                            sid = suggestion_data.get('id', '')
+                            if sid in batch_lookup:
+                                item = batch_lookup[sid]
+                                template = item['template']
+                                
+                                enhanced = {
+                                    'id': sid,
+                                    'category': item['category'].value,
+                                    'title': template.get('title', 'Improvement Suggestion'),
+                                    'flag_reference': item['flag'].get('message', 'Issue detected'),
+                                    'suggestion': suggestion_data.get('suggestion', template.get('base_suggestion', '')),
+                                    'action_steps': suggestion_data.get('action_steps', template.get('action_steps', [])),
+                                    'examples': suggestion_data.get('examples', template.get('examples', [])),
+                                    'potential_impact': template.get('potential_impact', 1),
+                                    'priority': self._get_priority_from_severity(item['flag'].get('severity', 'medium')),
+                                    'llm_enhanced': True
+                                }
+                                results[sid] = enhanced
+                                
+                                # Cache the result
+                                cache_key = self._get_cache_key(item['flag'], template)
+                                cache_entry = enhanced.copy()
+                                del cache_entry['id']
+                                self._suggestion_cache[cache_key] = cache_entry
+                        
+                        return results
+                    
+                except Exception as e:
+                    error_str = str(e)
+                    
+                    if '429' in error_str or 'RESOURCE_EXHAUSTED' in error_str:
+                        logger.warning(f"Rate limit hit on batch, key {keys_tried + 1} (attempt {attempt + 1}/{max_retries})")
+                        if attempt < max_retries - 1:
+                            time.sleep(1)
                         continue
-                
-                logger.warning(f"Batch LLM generation failed: {e}")
+                    
+                    logger.warning(f"Batch LLM generation failed: {e}")
+                    break
+            
+            # Try switching to next key
+            keys_tried += 1
+            if keys_tried < total_keys and self._switch_to_next_key():
+                logger.info(f"🔄 Retrying batch with next API key...")
+            else:
                 break
         
         # Fall back to individual generation for failed batch

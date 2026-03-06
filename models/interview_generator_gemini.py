@@ -327,8 +327,12 @@ class GeminiInterviewGenerator:
     def __init__(self):
         """Initialize Gemini Interview Generator."""
         self._llm_client = None
-        self._llm_model_name = os.getenv('GEMINI_MODEL', 'gemini-1.5-flash')
+        self._llm_model_name = os.getenv('GEMINI_MODEL', 'gemini-2.0-flash')
         self._is_ready = False
+        
+        # Multi-key support: list of API keys for rotation on rate limits
+        self._api_keys = []
+        self._current_key_index = 0
         
         # Performance tracking
         self._total_generations = 0
@@ -338,7 +342,7 @@ class GeminiInterviewGenerator:
         self._initialize_client()
     
     def _initialize_client(self) -> None:
-        """Initialize the Gemini client."""
+        """Initialize the Gemini client with multi-key support."""
         if not GEMINI_AVAILABLE:
             logger.warning(
                 "⚠️  google-genai package not installed. "
@@ -347,8 +351,16 @@ class GeminiInterviewGenerator:
             )
             return
         
-        api_key = os.getenv('GEMINI_API_KEY')
-        if not api_key:
+        # Collect all available API keys
+        primary_key = os.getenv('GEMINI_API_KEY')
+        secondary_key = os.getenv('GEMINI_API_KEY1')
+        
+        if primary_key:
+            self._api_keys.append(primary_key)
+        if secondary_key:
+            self._api_keys.append(secondary_key)
+        
+        if not self._api_keys:
             logger.warning(
                 "⚠️  GEMINI_API_KEY not found in environment. "
                 "Set GEMINI_API_KEY in your .env file."
@@ -356,11 +368,25 @@ class GeminiInterviewGenerator:
             return
         
         try:
-            self._llm_client = genai.Client(api_key=api_key)
+            self._llm_client = genai.Client(api_key=self._api_keys[0])
+            self._current_key_index = 0
             self._is_ready = True
-            logger.info(f"✅ GeminiInterviewGenerator initialized (model: {self._llm_model_name})")
+            logger.info(f"✅ GeminiInterviewGenerator initialized (model: {self._llm_model_name}, keys: {len(self._api_keys)})")
         except Exception as e:
             logger.error(f"❌ Failed to initialize Gemini client: {e}")
+    
+    def _switch_to_next_key(self) -> bool:
+        """Switch to the next available API key. Returns True if switched successfully."""
+        next_index = self._current_key_index + 1
+        if next_index < len(self._api_keys):
+            try:
+                self._llm_client = genai.Client(api_key=self._api_keys[next_index])
+                self._current_key_index = next_index
+                logger.info(f"🔄 Switched to API key {next_index + 1}/{len(self._api_keys)}")
+                return True
+            except Exception as e:
+                logger.error(f"❌ Failed to switch API key: {e}")
+        return False
     
     def is_ready(self) -> bool:
         """Check if the generator is ready to generate questions."""
@@ -612,43 +638,59 @@ IMPORTANT RULES:
         prompt = self._build_prompt(skills, projects, experience, role_context)
         logger.info(f"  Prompt built ({len(prompt)} chars)")
         
-        # Call Gemini with retry logic
-        max_retries = 3
+        # Call Gemini with retry logic and key rotation
+        max_retries = 2  # retries per key
         parsed_data = None
+        keys_tried = 0
+        total_keys = len(self._api_keys)
         
-        for attempt in range(max_retries):
-            try:
-                logger.info(f"\n📡 Calling Gemini API (attempt {attempt + 1}/{max_retries})...")
-                
-                response = self._llm_client.models.generate_content(
-                    model=self._llm_model_name,
-                    contents=prompt
-                )
-                
-                response_text = response.text.strip()
-                logger.info(f"  Response received ({len(response_text)} chars)")
-                
-                # Parse response
-                parsed_data = self._parse_response(response_text)
-                
-                if parsed_data:
-                    logger.info("  ✅ Response parsed successfully")
-                    break
-                else:
-                    logger.warning(f"  ⚠️ Failed to parse response, retrying...")
+        while keys_tried < total_keys:
+            for attempt in range(max_retries):
+                try:
+                    logger.info(f"\n📡 Calling Gemini API (key {keys_tried + 1}/{total_keys}, attempt {attempt + 1}/{max_retries})...")
                     
-            except Exception as e:
-                error_str = str(e)
-                
-                # Handle rate limits
-                if '429' in error_str or 'RESOURCE_EXHAUSTED' in error_str:
-                    wait_time = 2 * (2 ** attempt)
-                    logger.warning(f"  Rate limit hit, waiting {wait_time}s...")
-                    time.sleep(wait_time)
+                    response = self._llm_client.models.generate_content(
+                        model=self._llm_model_name,
+                        contents=prompt
+                    )
+                    
+                    response_text = response.text.strip()
+                    logger.info(f"  Response received ({len(response_text)} chars)")
+                    
+                    # Parse response
+                    parsed_data = self._parse_response(response_text)
+                    
+                    if parsed_data:
+                        logger.info("  ✅ Response parsed successfully")
+                        break
+                    else:
+                        logger.warning(f"  ⚠️ Failed to parse response, retrying...")
+                        
+                except Exception as e:
+                    error_str = str(e)
+                    
+                    # Handle rate limits
+                    if '429' in error_str or 'RESOURCE_EXHAUSTED' in error_str:
+                        logger.warning(f"  Rate limit hit on key {keys_tried + 1}")
+                        if attempt < max_retries - 1:
+                            time.sleep(1)
+                        # After last attempt on this key, break to try next key
+                    else:
+                        logger.error(f"  ❌ API error: {e}")
+                        if attempt < max_retries - 1:
+                            time.sleep(1)
+            
+            if parsed_data:
+                break
+            
+            # Try switching to next key
+            keys_tried += 1
+            if keys_tried < total_keys:
+                if self._switch_to_next_key():
+                    logger.info(f"  🔄 Retrying with next API key...")
                 else:
-                    logger.error(f"  ❌ API error: {e}")
-                    if attempt < max_retries - 1:
-                        time.sleep(1)
+                    break
+            
         
         # Create question set from parsed data
         if parsed_data:
