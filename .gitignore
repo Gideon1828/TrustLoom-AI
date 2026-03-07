@@ -85,3 +85,10 @@ htmlcov/
 .mypy_cache/
 .dmypy.json
 dmypy.json
+
+
+release/
+dist/
+win-unpacked/
+*.exe
+test.txt

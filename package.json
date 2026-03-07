@@ -1,0 +1,62 @@
+{
+  "name": "trustloom-ai",
+  "version": "1.0.0",
+  "description": "TrustLoom AI - AI-powered Freelancer Trust Evaluation System",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build:frontend": "cd frontend && npm run build",
+    "build:backend": "python -m PyInstaller backend.spec --noconfirm",
+    "build:electron": "npx electron-builder",
+    "build:all": "npm run build:frontend && npm run build:backend && npm run build:electron",
+    "dev": "electron ."
+  },
+  "build": {
+    "appId": "com.trustloom.ai",
+    "productName": "TrustLoom AI",
+    "copyright": "Copyright © 2026 TrustLoom AI",
+    "win": {
+      "target": "dir",
+      "icon": "frontend/public/logo.ico",
+      "signAndEditExecutable": false
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "package.json",
+      "node_modules/**/*"
+    ],
+    "asarUnpack": [
+      "preload.js"
+    ],
+    "extraResources": [
+      {
+        "from": "frontend/dist",
+        "to": "frontend",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "directories": {
+      "output": "release"
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Gideon1828/TrustLoom-AI.git"
+  },
+  "keywords": [
+    "trustloom",
+    "ai",
+    "freelancer",
+    "evaluation"
+  ],
+  "author": "TrustLoom AI Team",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^40.8.0",
+    "electron-builder": "^26.8.1",
+    "rcedit": "^5.0.2"
+  }
+}

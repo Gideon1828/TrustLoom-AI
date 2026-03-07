@@ -20,7 +20,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { checkRateLimit, recordAttempt, clearRateLimit } from '../../utils/rateLimiter';
 import { validateAuthForm, sanitizeInput } from '../../utils/inputSanitizer';
-import { Sun, Moon, ShieldCheck, Sparkles, BarChart3, MessageSquareText, Lock, Mail, KeyRound, Eye, EyeOff, ArrowRight, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Sun, Moon, ShieldCheck, Sparkles, BarChart3, MessageSquareText, Lock, Mail, KeyRound, Eye, EyeOff, ArrowLeft, ArrowRight, CheckCircle2, AlertCircle } from 'lucide-react';
 import logo from '../../assets/logo.png';
 import './Auth.css';
 
@@ -240,6 +240,14 @@ const Login = () => {
         {/* Right Panel - Login Form */}
         <div className="auth-form-panel">
           <div className="auth-form-container">
+            <button
+              className="auth-back-btn"
+              onClick={() => navigate('/')}
+              title="Back to Home"
+            >
+              <ArrowLeft size={18} />
+              <span>Home</span>
+            </button>
             <div className="auth-header">
               <h2 className="auth-title">Welcome Back</h2>
               <p className="auth-subtitle">

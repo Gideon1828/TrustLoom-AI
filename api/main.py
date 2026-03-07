@@ -1837,6 +1837,24 @@ async def health_check():
     )
 
 
+# ============================================================================
+# EVALUATION CANCELLATION SUPPORT
+# ============================================================================
+# Per-client cancel flag (simple single-user approach for desktop app)
+_evaluation_cancelled = False
+
+@app.post(
+    "/cancel-evaluation",
+    tags=["Evaluation"],
+    summary="Cancel Evaluation",
+    description="Signal the running evaluation to stop early",
+)
+async def cancel_evaluation():
+    global _evaluation_cancelled
+    _evaluation_cancelled = True
+    logger.info("🛑 Evaluation cancellation requested by client")
+    return {"success": True, "message": "Cancellation signal sent"}
+
 @app.post(
     "/evaluate",
     response_model=EvaluationResponse,
@@ -1894,6 +1912,14 @@ async def evaluate_freelancer(request: EvaluationRequest):
         ```
     """
     try:
+        global _evaluation_cancelled
+        _evaluation_cancelled = False  # Reset cancel flag at start
+
+        def _check_cancelled():
+            if _evaluation_cancelled:
+                logger.info("🛑 Evaluation cancelled by user — aborting pipeline")
+                raise HTTPException(status_code=499, detail="Evaluation cancelled by user")
+
         logger.info("="*70)
         logger.info("🎯 EVALUATION REQUEST RECEIVED")
         logger.info("="*70)
@@ -1935,6 +1961,7 @@ async def evaluate_freelancer(request: EvaluationRequest):
         # ====================================================================
         # STEP 2: PROCESS RESUME THROUGH BERT
         # ====================================================================
+        _check_cancelled()
         logger.info("\n📋 Step 2: Processing Resume through BERT...")
         
         try:
@@ -1969,6 +1996,7 @@ async def evaluate_freelancer(request: EvaluationRequest):
         # ====================================================================
         # STEP 3: EXTRACT PROJECT INDICATORS
         # ====================================================================
+        _check_cancelled()
         logger.info("\n📋 Step 3: Extracting Project Indicators...")
         
         # Initialize project flags
@@ -2037,6 +2065,7 @@ async def evaluate_freelancer(request: EvaluationRequest):
         # ====================================================================
         # STEP 4: PROCESS THROUGH LSTM
         # ====================================================================
+        _check_cancelled()
         logger.info("\n📋 Step 4: Processing through LSTM...")
         
         try:
@@ -2083,6 +2112,7 @@ async def evaluate_freelancer(request: EvaluationRequest):
         # ====================================================================
         # STEP 5: CALCULATE RESUME SCORE
         # ====================================================================
+        _check_cancelled()
         logger.info("\n📋 Step 5: Calculating Resume Score...")
         
         resume_score = resume_scr.calculate_resume_score(bert_score, lstm_score)
@@ -2093,6 +2123,7 @@ async def evaluate_freelancer(request: EvaluationRequest):
         # ====================================================================
         # STEP 6: VALIDATE LINKS AND CALCULATE HEURISTIC SCORE
         # ====================================================================
+        _check_cancelled()
         logger.info("\n📋 Step 6: Validating Links and Experience...")
         
         try:
@@ -2141,6 +2172,7 @@ async def evaluate_freelancer(request: EvaluationRequest):
         # ====================================================================
         # STEP 7: CALCULATE FINAL TRUST SCORE
         # ====================================================================
+        _check_cancelled()
         logger.info("\n📋 Step 7: Calculating Final Trust Score...")
         
         final_result = final_scr.calculate_final_score(
@@ -2159,6 +2191,7 @@ async def evaluate_freelancer(request: EvaluationRequest):
         # ====================================================================
         # STEP 8: AGGREGATE ALL FLAGS
         # ====================================================================
+        _check_cancelled()
         logger.info("\n📋 Step 8: Aggregating Flags...")
         
         all_flags = []
@@ -2210,6 +2243,7 @@ async def evaluate_freelancer(request: EvaluationRequest):
         # ====================================================================
         # STEP 9: PREPARE USER-FRIENDLY OUTPUT
         # ====================================================================
+        _check_cancelled()
         logger.info("\n📋 Step 9: Preparing Response...")
         
         # Score breakdown
@@ -2274,6 +2308,7 @@ async def evaluate_freelancer(request: EvaluationRequest):
         # ====================================================================
         # STEP 10: GENERATE XAI EXPLANATIONS (Module 21 Add-on)
         # ====================================================================
+        _check_cancelled()
         logger.info("\n📋 Step 10: Generating XAI Explanations...")
         
         explanations = None
@@ -2349,6 +2384,7 @@ async def evaluate_freelancer(request: EvaluationRequest):
         # ====================================================================
         # STEP 11: GENERATE IMPROVEMENT SUGGESTIONS (Module 22 Add-on)
         # ====================================================================
+        _check_cancelled()
         logger.info("\n💡 Step 11: Generating Improvement Suggestions...")
         
         suggestions_response = None

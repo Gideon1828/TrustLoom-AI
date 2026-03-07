@@ -30,20 +30,20 @@ router = APIRouter(prefix="/api/chat", tags=["Chat"])
 
 OPENROUTER_MODEL = os.getenv(
     "OPENROUTER_MODEL",
-    "meta-llama/llama-3.2-3b-instruct:free",   # Primary free-tier model
+    "nvidia/nemotron-3-nano-30b-a3b:free",   # Primary free-tier model
 )
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 # Fallback models — tried in order when the primary model is rate-limited (429)
 FALLBACK_MODELS = [
+    "openai/gpt-oss-20b:free",
+    "meta-llama/llama-3.2-3b-instruct:free",
     "google/gemma-3-12b-it:free",
     "meta-llama/llama-3.3-70b-instruct:free",
     "mistralai/mistral-small-3.1-24b-instruct:free",
     "qwen/qwen3-4b:free",
     "google/gemma-3-27b-it:free",
     "nousresearch/hermes-3-llama-3.1-405b:free",
-    "nvidia/nemotron-3-nano-30b-a3b:free",
-    "openai/gpt-oss-20b:free",
 ]
 MAX_RETRIES = len(FALLBACK_MODELS) + 1  # primary + all fallbacks
 

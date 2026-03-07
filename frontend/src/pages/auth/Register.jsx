@@ -21,7 +21,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { checkRateLimit, recordAttempt, clearRateLimit } from '../../utils/rateLimiter';
 import { validateAuthForm, sanitizeInput } from '../../utils/inputSanitizer';
-import { Sun, Moon, ShieldCheck, Zap, Award, ShieldAlert, TrendingUp, User, Mail, Building2, KeyRound, Lock, Eye, EyeOff, ArrowRight, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Sun, Moon, ShieldCheck, Zap, Award, ShieldAlert, TrendingUp, User, Mail, Building2, KeyRound, Lock, Eye, EyeOff, ArrowLeft, ArrowRight, AlertCircle, CheckCircle2 } from 'lucide-react';
 import logo from '../../assets/logo.png';
 import './Auth.css';
 
@@ -300,6 +300,14 @@ const Register = () => {
         {/* Right Panel - Registration Form */}
         <div className="auth-form-panel">
           <div className="auth-form-container">
+            <button
+              className="auth-back-btn"
+              onClick={() => navigate('/')}
+              title="Back to Home"
+            >
+              <ArrowLeft size={18} />
+              <span>Home</span>
+            </button>
             <div className="auth-header">
               <h2 className="auth-title">Create Account</h2>
               <p className="auth-subtitle">

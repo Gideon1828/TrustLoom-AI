@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { HashRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { HistoryProvider, useHistory } from "./context/HistoryContext";
 import { ThemeProvider } from "./context/ThemeContext";
@@ -191,10 +191,7 @@ function AppLayout({ children }) {
       </main>
 
       <footer className="app-footer">
-        <p>© 2026 Freelancer Trust Evaluation System. All rights reserved.</p>
-        <p className="footer-tech">
-          Powered by BERT, LSTM & Heuristic Analysis
-        </p>
+        <p>© 2026 TrustLoom AI. All rights reserved.</p>
       </footer>
 
       {/* AI Helper ChatBot */}

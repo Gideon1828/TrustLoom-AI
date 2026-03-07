@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import axios from "axios";
 import "./InputForm.css";
 
@@ -28,6 +28,59 @@ const InputForm = ({ onEvaluationComplete, onLoadingStart, isLoading, onCancelEv
   const [loadingStatus, setLoadingStatus] = useState("");
   const [estimatedTime, setEstimatedTime] = useState(0);
   const [elapsedTime, setElapsedTime] = useState(0);
+
+  // Animated pipeline stages
+  const [activeStage, setActiveStage] = useState(-1);
+  const [completedStages, setCompletedStages] = useState([]);
+  const [dataParticles, setDataParticles] = useState([]);
+  const stageTimerRef = useRef(null);
+  const particleTimerRef = useRef(null);
+
+  const PIPELINE_STAGES = [
+    { id: 0, label: 'Uploading Resume', icon: 'upload', description: 'Extracting text content from your document', duration: 4000 },
+    { id: 1, label: 'Language Analysis', icon: 'brain', description: 'Analyzing writing quality and content authenticity', duration: 6000 },
+    { id: 2, label: 'Project Extraction', icon: 'extract', description: 'Identifying projects, timelines, and technologies', duration: 8000 },
+    { id: 3, label: 'Pattern Recognition', icon: 'pattern', description: 'Detecting experience patterns and consistency', duration: 6000 },
+    { id: 4, label: 'Profile Verification', icon: 'verify', description: 'Validating GitHub, LinkedIn, and portfolio links', duration: 10000 },
+    { id: 5, label: 'Score Computation', icon: 'compute', description: 'Calculating trust score with AI explanations', duration: 8000 },
+    { id: 6, label: 'Generating Report', icon: 'report', description: 'Compiling results and recommendations', duration: 6000 },
+  ];
+
+  // Start animated pipeline when loading begins
+  const startPipeline = useCallback(() => {
+    setActiveStage(0);
+    setCompletedStages([]);
+    setDataParticles([]);
+    let currentStage = 0;
+
+    const advanceStage = () => {
+      if (currentStage < PIPELINE_STAGES.length - 1) {
+        setCompletedStages(prev => [...prev, currentStage]);
+        currentStage++;
+        setActiveStage(currentStage);
+        stageTimerRef.current = setTimeout(advanceStage, PIPELINE_STAGES[currentStage].duration);
+      }
+    };
+
+    stageTimerRef.current = setTimeout(advanceStage, PIPELINE_STAGES[0].duration);
+
+    // Spawn data particles for animation
+    let particleId = 0;
+    particleTimerRef.current = setInterval(() => {
+      setDataParticles(prev => {
+        const newParticles = [...prev, { id: particleId++, x: Math.random() * 100, delay: Math.random() * 0.5 }];
+        return newParticles.slice(-12); // Keep max 12 particles
+      });
+    }, 400);
+  }, []);
+
+  const stopPipeline = useCallback(() => {
+    if (stageTimerRef.current) clearTimeout(stageTimerRef.current);
+    if (particleTimerRef.current) clearInterval(particleTimerRef.current);
+    setActiveStage(-1);
+    setCompletedStages([]);
+    setDataParticles([]);
+  }, []);
 
   // API configuration
   const API_BASE_URL = "http://localhost:8000";
@@ -269,9 +322,12 @@ const InputForm = ({ onEvaluationComplete, onLoadingStart, isLoading, onCancelEv
     try {
       onLoadingStart();
 
-      // Set estimated time (~30 seconds)
-      setEstimatedTime(30);
+      // Set estimated time (~50 seconds)
+      setEstimatedTime(50);
       setElapsedTime(0);
+
+      // Start animated pipeline
+      startPipeline();
 
       // Start elapsed time counter
       timerInterval = setInterval(() => {
@@ -279,7 +335,7 @@ const InputForm = ({ onEvaluationComplete, onLoadingStart, isLoading, onCancelEv
       }, 1000);
 
       // Step 1: Upload and extract text from resume
-      setLoadingStatus("📄 Uploading resume...");
+      setLoadingStatus("Uploading resume...");
 
       const formDataUpload = new FormData();
       formDataUpload.append("file", formData.resumeFile);
@@ -314,7 +370,7 @@ const InputForm = ({ onEvaluationComplete, onLoadingStart, isLoading, onCancelEv
       };
 
       // Step 2: Call evaluation endpoint (BERT, LSTM, link validation all happen server-side)
-      setLoadingStatus("🧠 Analyzing profile with AI models...");
+      setLoadingStatus("Analyzing profile with AI models...");
       const evaluationResponse = await apiCallWithRetry(async () => {
         return await axios.post(
           `${API_BASE_URL}/evaluate`,
@@ -336,10 +392,14 @@ const InputForm = ({ onEvaluationComplete, onLoadingStart, isLoading, onCancelEv
       if (abortController.signal.aborted) throw new axios.Cancel("Evaluation cancelled by user");
 
       // Finalizing results
-      setLoadingStatus("✅ Evaluation complete!");
+      setLoadingStatus("Evaluation complete!");
+      // Mark all stages complete
+      setCompletedStages(PIPELINE_STAGES.map(s => s.id));
+      setActiveStage(-1);
 
       // Clear timer
       if (timerInterval) clearInterval(timerInterval);
+      stopPipeline();
 
       // Reset loading states
       setLoadingStatus("");
@@ -359,6 +419,9 @@ const InputForm = ({ onEvaluationComplete, onLoadingStart, isLoading, onCancelEv
         setLoadingStatus("");
         setElapsedTime(0);
         setEstimatedTime(0);
+        stopPipeline();
+        // Fire backend cancel (best-effort, don't await)
+        try { axios.post(`${API_BASE_URL}/cancel-evaluation`).catch(() => {}); } catch (_) {}
         if (onCancelEvaluation) onCancelEvaluation();
         return;
       }
@@ -755,63 +818,104 @@ const InputForm = ({ onEvaluationComplete, onLoadingStart, isLoading, onCancelEv
             </button>
           </div>
 
-          {/* Loading States */}
+          {/* Loading States — Animated Pipeline */}
           {isLoading && (
-            <div className="loading-status">
-              <div className="loading-steps">
-                <div className={`loading-step ${loadingStatus.includes("Uploading") ? "active" : loadingStatus.includes("Analyzing") || loadingStatus.includes("complete") ? "done" : ""}`}>
-                  <div className="step-dot"></div>
-                  <span>Upload Resume</span>
-                </div>
-                <div className="step-connector"></div>
-                <div className={`loading-step ${loadingStatus.includes("Analyzing") ? "active" : loadingStatus.includes("complete") ? "done" : ""}`}>
-                  <div className="step-dot"></div>
-                  <span>AI Analysis</span>
-                </div>
-                <div className="step-connector"></div>
-                <div className={`loading-step ${loadingStatus.includes("complete") ? "active" : ""}`}>
-                  <div className="step-dot"></div>
-                  <span>Done</span>
-                </div>
+            <div className="loading-status pipeline-view">
+              {/* Animated Background Particles */}
+              <div className="pipeline-particles">
+                {dataParticles.map(p => (
+                  <div key={p.id} className="data-particle" style={{ left: `${p.x}%`, animationDelay: `${p.delay}s` }} />
+                ))}
               </div>
 
-              <div className="loading-spinner-container">
-                <div className="loading-spinner"></div>
+              {/* Pipeline Header */}
+              <div className="pipeline-header">
+                <div className="pipeline-icon-ring">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                    <path d="M2 17l10 5 10-5" />
+                    <path d="M2 12l10 5 10-5" />
+                  </svg>
+                </div>
+                <h3 className="pipeline-title">AI Evaluation Pipeline</h3>
+                <p className="pipeline-subtitle">Processing your profile through multiple analysis engines</p>
               </div>
 
-              <p className="loading-message">
-                {loadingStatus || "Processing your profile..."}
-              </p>
+              {/* Stage Pipeline */}
+              <div className="pipeline-stages">
+                {PIPELINE_STAGES.map((stage, idx) => {
+                  const isActive = activeStage === idx;
+                  const isDone = completedStages.includes(idx);
+                  const isPending = !isActive && !isDone;
+                  return (
+                    <div key={stage.id} className={`pipeline-stage ${isActive ? 'active' : ''} ${isDone ? 'done' : ''} ${isPending ? 'pending' : ''}`}>
+                      <div className="stage-indicator">
+                        <div className="stage-icon-wrapper">
+                          {isDone ? (
+                            <svg className="stage-check" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                          ) : isActive ? (
+                            <div className="stage-pulse-ring">
+                              <div className="stage-pulse-dot" />
+                            </div>
+                          ) : (
+                            <div className="stage-number">{idx + 1}</div>
+                          )}
+                        </div>
+                        {idx < PIPELINE_STAGES.length - 1 && (
+                          <div className={`stage-connector ${isDone ? 'done' : ''}`}>
+                            {isActive && <div className="connector-flow" />}
+                          </div>
+                        )}
+                      </div>
+                      <div className="stage-content">
+                        <span className="stage-label">{stage.label}</span>
+                        {isActive && (
+                          <span className="stage-description">{stage.description}</span>
+                        )}
+                        {isActive && (
+                          <div className="stage-progress-bar">
+                            <div className="stage-progress-fill" style={{ animationDuration: `${stage.duration}ms` }} />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
 
-              <div className="loading-progress">
-                <div className="time-indicator">
-                  <span className="time-label">Elapsed</span>
-                  <span className="time-value">{elapsedTime}s</span>
-                </div>
-                {estimatedTime > 0 && (
+              {/* Time & Status */}
+              <div className="pipeline-footer">
+                <div className="pipeline-times">
+                  <div className="time-indicator">
+                    <span className="time-label">Elapsed</span>
+                    <span className="time-value">{elapsedTime}s</span>
+                  </div>
+                  <div className="pipeline-progress-ring">
+                    <svg viewBox="0 0 36 36" className="circular-progress">
+                      <path className="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                      <path className="circle-fill" strokeDasharray={`${Math.min((elapsedTime / (estimatedTime || 50)) * 100, 100)}, 100`} d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                    </svg>
+                    <span className="progress-percent">{Math.min(Math.round((elapsedTime / (estimatedTime || 50)) * 100), 99)}%</span>
+                  </div>
                   <div className="time-indicator">
                     <span className="time-label">Estimated</span>
                     <span className="time-value">~{estimatedTime}s</span>
                   </div>
-                )}
+                </div>
+
+                <button
+                  type="button"
+                  className="cancel-eval-btn"
+                  onClick={() => {
+                    if (abortControllerRef.current) {
+                      abortControllerRef.current.abort();
+                    }
+                  }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                  Cancel Evaluation
+                </button>
               </div>
-
-              <p className="loading-subtext">
-                Please wait while our AI analyzes your profile
-              </p>
-
-              <button
-                type="button"
-                className="cancel-eval-btn"
-                onClick={() => {
-                  if (abortControllerRef.current) {
-                    abortControllerRef.current.abort();
-                  }
-                }}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-                Cancel Evaluation
-              </button>
             </div>
           )}
         </form>

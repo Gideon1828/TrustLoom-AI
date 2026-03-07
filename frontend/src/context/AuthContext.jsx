@@ -453,18 +453,31 @@ export const AuthProvider = ({ children }) => {
       setError(null);
       setLoading(true);
 
+      // Determine redirect URL based on environment
+      const isElectron = window.electronAPI?.isElectron;
+      const callbackPort = window.electronAPI?.authCallbackPort || 5890;
+      const redirectUrl = isElectron
+        ? `http://127.0.0.1:${callbackPort}/auth/callback`
+        : `${window.location.origin}/auth/callback`;
+
       // Get OAuth URL from backend
       const response = await authApi.post(`/oauth/${provider}`, {
-        redirect_url: `${window.location.origin}/auth/callback`
+        redirect_url: redirectUrl
       });
 
       if (response.data.success && response.data.url) {
         // Store the provider for callback handling
         localStorage.setItem('oauth_provider', provider);
         
-        // Redirect to OAuth provider
-        window.location.href = response.data.url;
+        if (isElectron) {
+          // Open OAuth URL in system browser via Electron's shell API
+          window.electronAPI.openExternal(response.data.url);
+        } else {
+          // Web: redirect in same window
+          window.location.href = response.data.url;
+        }
         
+        setLoading(false);
         return {
           success: true,
           message: `Redirecting to ${provider}...`
@@ -551,6 +564,40 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     }
   };
+
+  // Listen for OAuth tokens from Electron's auth callback server
+  const handleOAuthCallbackRef = useRef(handleOAuthCallback);
+  handleOAuthCallbackRef.current = handleOAuthCallback;
+
+  useEffect(() => {
+    if (!window.electronAPI?.isElectron) return;
+
+    const log = (msg) => {
+      console.log(msg);
+      window.electronAPI?.log?.(msg);
+    };
+
+    const handler = async (e) => {
+      const tokens = e.detail;
+      log(`[Electron OAuth] Event received! access_token: ${!!tokens.access_token}, refresh_token: ${!!tokens.refresh_token}`);
+      try {
+        const result = await handleOAuthCallbackRef.current(tokens);
+        log(`[Electron OAuth] Callback result: success=${result.success}, message=${result.message}`);
+        if (result.success) {
+          log('[Electron OAuth] Navigating to dashboard');
+          window.location.hash = '/dashboard';
+        } else {
+          log(`[Electron OAuth] Auth failed: ${result.message}`);
+        }
+      } catch (err) {
+        log(`[Electron OAuth] Error: ${err.message}`);
+      }
+    };
+
+    log('[Electron OAuth] Registering event listener');
+    window.addEventListener('electron-oauth-callback', handler);
+    return () => window.removeEventListener('electron-oauth-callback', handler);
+  }, []);
 
   // Sign out
   const signOut = async () => {
